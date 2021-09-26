@@ -18,18 +18,15 @@ RDLogger.DisableLog('rdApp.*') #Supress annoying RDKit output
 from multiprocessing import Pool
 
 ##########
-import summaryStats
 import frag_utils
 
 
 
 
 
-
-savedModelDict = {'Orig':'DeLinker_Orig_Zinc_NoAD.pickle',
-                 'Count':'DeLinker_Count_Zinc_NoAD.pickle',
-                 'Pharm':'DeLinker_Pharm_Zinc_NoAD.pickle'}
-
+savedModelDict = {'Orig':'GenModelDeLinker_saved.pickle',
+                 'Count':'coarseGrainedGenModel_saved.pickle',
+                 'Pharm':'fineGrainedGenModel_saved.pickle'}
 
 
 
@@ -146,9 +143,34 @@ def getSDFs(data, core, outName):
 
 #Do Filtering of generated molecules
 
+def parallelize_dataframe(df, func, n_cores=4):
+    df_split = np.array_split(df, n_cores)
+    pool = Pool(n_cores)
+    df = pd.concat(pool.map(func, df_split))
+    pool.close()
+    pool.join()
+    return df
+
+def addElab(df):
+
+    elab = []
+    for idx, row in df.iterrows():
+        try:
+            elab.append(returnGenElaborationWithDummy(row['frag'], row['gen']))
+        except:
+            elab.append('Error')
+
+
+    df['elab'] = elab
+
+    return df
+
+
+
+
 def filterGeneratedMols(df):
 
-    df = summaryStats.parallelize_dataframe(df, summaryStats.addElab, n_cores = 7)
+    df = parallelize_dataframe(df, addElab, n_cores = 7)
     df = frag_utils.check_2d_filters_dataset_pandas(df)
 
     df = df.loc[df['passed'] == 1][['frag', 'full', 'gen', 'elab']]
