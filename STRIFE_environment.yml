@@ -19,6 +19,7 @@ dependencies:
   - async_generator=1.10=py37h28b3542_0
   - attrs=21.2.0=pyhd3eb1b0_0
   - backcall=0.2.0=py_0
+  - biopython
   - blas=1.0=mkl
   - bleach=3.3.0=pyhd3eb1b0_0
   - blosc=1.21.0=h8c45485_0
@@ -232,7 +233,7 @@ dependencies:
   - zstd=1.4.9=haebb681_0
   - pip:
     - futures==3.1.1
-    - hotspots==1.0.3
+  #  - hotspots==1.0.3
     - joblib==1.0.0
     - matplotlib
     - planarity==0.4.1

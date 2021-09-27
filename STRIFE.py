@@ -683,11 +683,11 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
     
-    parser.add_argument('--fragment_sdf', '-f', type = str, default = None,
+    parser.add_argument('--fragment_sdf', '-f', type = str, required = True,
                         help = 'Location of fragment SDF. Can be an SDF file of a larger ligand for which the fragment is a substructure')
-    parser.add_argument('--fragment_smiles', '-s', type = str, default = None,
+    parser.add_argument('--fragment_smiles', '-s', type = str, required = True,
                         help = 'Location of file containing fragment smiles string. The exit vector should be denoted by a dummy atom')
-    parser.add_argument('--protein', '-p', type = str, default = None,
+    parser.add_argument('--protein', '-p', type = str, required = True,
                         help = 'Location of protein pdb file (should have already been protonated)')
     parser.add_argument('--output_directory', '-o', type = str, default = '.', 
                         help = 'Directory to store output (default = current directory)')
