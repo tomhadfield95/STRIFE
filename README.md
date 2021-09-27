@@ -8,7 +8,7 @@ This repository contains our implementation of the STRIFE algorithm, described i
 
 The generative models in this work were based on the [Constrained Graph Variational Autoencoder](https://arxiv.org/abs/1805.09076). We thank the authors for releasing the [code](https://github.com/Microsoft/constrained-graph-variational-autoencoder) and invite you to cite their work if you found it useful. 
 
-STRIFE calculates Fragment Hotspot Maps using the [Hotspots API](https://github.com/prcurran/hotspots) developed by [Radoux et al.](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00996). We thank the authors for making this resource available.
+STRIFE calculates Fragment Hotspot Maps using the [Hotspots API](https://github.com/prcurran/hotspots) developed by [Curran et al.](https://pubs.acs.org/doi/10.1021/acs.jcim.9b00996). We thank the authors for making this resource available.
 
 
 
