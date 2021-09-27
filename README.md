@@ -1,1 +1,1 @@
-## STRIFE Algorithm ##
+## STRIFE Algorithm
