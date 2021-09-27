@@ -25,19 +25,13 @@ Use of the Hotspots API (extraction of target-specific information) and the GOLD
 
 To download the CSD suite you need to know your institution's Activation Key and Licence Number. Go to the [CSD Downloads page](https://www.ccdc.cam.ac.uk/support-and-resources/csdsdownloads/) and fill in the information to receive an email (titled 'CCDC Download Request') with a set of download links. Copy the relevant link (for linux users 'CSDS 2021.2 Linux' or similar).
 
-As the link is very long, it may be necessary to enclose the wget command in a .sh script, with the link address enclosed by single quotes (see below)
+As the download link includes special characters, it is necessary to enclose the url with single quotation marks:
 
 ```
 wget '<insert download link here>'
 ```
 
-Then run the .sh script from the command line (assuming you named the bash script `download_CSD.sh`):
-
-```
-bash download_CSD.sh
-```
-
-If successful, your current directory will now contain a tar file, which can be unzipped using the `tar -zxvf <tar_file>` functionality.
+If successful, your current directory will now contain a tar file, which can be unzipped using the `tar -xvf <tar_file>` functionality.
 
 This should yield a directory named `csds-2021.2.0-linux-installer` (or similar, depending on the exact version). You can run the installer by entering `csds-2021.2.0-linux-installer/csds-linux-x64.run` in the command line. If you don't have access to a GUI, you should add the `--mode text` flag.
 
@@ -60,7 +54,7 @@ If successful, an executable file called `ghecom` will now be in the parent dire
 
 ## Setting up the STRIFE conda environment
 
-This can be done by simply using the provided `STRIFE_environment.yml` file. You will need to edit the yml file in two places: First, in the `channels` section you will need to edit the path to the `ccdc_conda_channel` to reflect your own installation, and you will need to update the prefix at the bottom of the file to where you have installed the CSD Suite.
+This can be done by simply using the provided `STRIFE_environment.yml` file. You will need to edit the yml file in two places: First, the CCDC installer creates a directory named `Python_API_2021/ccdc_conda_channel/`. You will need to update the yml file to provide the location of this directory. Second you will need to update the prefix at the bottom of the file to where you have installed the CSD Suite.
 
 Once the yml has been updated, simply run:
 
@@ -81,5 +75,78 @@ export GOLD_DIR=<path/to/CSD/installation>/Discovery_2021/GOLD #To do GOLD docki
 ```
 
 After this step you should be able to run STRIFE from the terminal!
+
+
+# Running STRIFE
+
+STRIFE can be run from the command line by typing 
+
+```
+cd <path/to/STRIFE/directory>
+python STRIFE.py <arguments>
+```
+
+For information about the different arguments which can be used, run `python STRIFE.py -h`.
+
+STRIFE has three required arguments, which must be passed to the model:
+
+* `--fragment_sdf` Location of the fragment SDF. Can be an SDF file of a larger ligand for which the fragment is a substructure (in case the user only has a structure of a larger molecule but wishes to replace an R-group.
+* `--fragment_smiles` Location of file which contains fragment SMILES string. Exit vector should be denoted by a dummy atom.
+* `--protein` Location of a protein pdb file (should already have been protonated to allow docking in GOLD)
+
+There are a variety of extra arguments which can be provided to the model, the most important of which is `--model_type`, which allows the user to choose which setting to run STRIFE on:
+* `0` runs the default implementation of STRIFE outlined in the paper
+* `1` allows the user to manually specify their own pharmacophoric points (instead of STRIFE extracting them from a Fragment Hotspot Map). STRIFE will attempt to generate elaborations which simulataneously satisfy all pharmacophoric points. See below for instructions on how to do this.
+* `2` runs the STRIFE_NR outlined in the paper, where the Refinement phase of the STRIFE algorithm is omitted.
+
+
+### Example code to run STRIFE using the default implementation
+
+```
+cd <path/to/STRIFE/directory>
+python STRIFE.py
+```
+
+# Using PyMol
+
+We found that installing PyMol into the STRIFE directory seemed to cause issues. Others might not find this to be the case but for simplicity we provide a second Conda environment, called `pymol_env` which just contains the packages necessary to run the open source version of PyMol. The environment can be installed as follows:
+
+```
+conda env create -f PyMol_environment.yml
+conda activate pymol_env
+```
+
+And a PyMol session can be started by simply running `pymol` in the command line. 
+
+
+
+# Calculating a Fragment Hotspots Map
+
+We provide a simple script to calculate an FHM for a given PDB file. Simply run:
+
+```
+cd <path/to/STRIFE/directory>
+conda activate STRIFE
+python run_hotspots_algorithm.py <location of PDB File> <Output Directory>
+```
+To view the FHM, run:
+
+```
+conda activate pymol_env
+cd <Output Directory>
+python pymol_file.py
+```
+
+Which will load a PyMol session with the FHM displayed
+
+
+# Manually Specifying Pharmacophoric Points
+
+To manually specify a set of pharmacophoric points, you should use the `doManualPharmSpecification.sh` bash script, which should be run as follows:
+
+```
+bash doManualPharmSpecification.sh 
+```
+
 
 
