@@ -82,7 +82,6 @@ After this step you should be able to run STRIFE from the terminal!
 STRIFE can be run from the command line by typing 
 
 ```
-cd <path/to/STRIFE/directory>
 python STRIFE.py <arguments>
 ```
 
@@ -102,9 +101,10 @@ There are a variety of extra arguments which can be provided to the model, the m
 
 ### Example code to run STRIFE using the default implementation
 
+We run STRIFE on one of the examples in our test set derived from CASF-2016 (PDB ID 1Q8T). The ground truth ligand (`examples/1q8t_ligand.sdf`) was fragmented to yield a fragment for elaboration. We have already calculated the FHM (`example/hotspotsOut/out.zip`), so STRIFE doesn't need to calculate it before commencing.
+
 ```
-cd <path/to/STRIFE/directory>
-python STRIFE.py
+python STRIFE.py -f example/1q8t_frag.sdf -s example/1q8t_frag_smiles.smi -p example/1q8t_protein.pdb -z example/hotspotsOut/out.zip -o example/STRIFE_1q8t
 ```
 
 # Using PyMol
@@ -145,8 +145,20 @@ Which will load a PyMol session with the FHM displayed
 To manually specify a set of pharmacophoric points, you should use the `doManualPharmSpecification.sh` bash script, which should be run as follows:
 
 ```
-bash doManualPharmSpecification.sh 
+bash doManualPharmSpecification.sh <fragment_SDF> <fragment_SMILES> <protein_PDB> <directory_to_store_output>
 ```
 
+The script loads the fragment into a PyMol session and generates a lattice of points about the exit vector. The user then selects their desired pharmacophoric points and can save them in the output directory. The donor hotspots and the acceptor hotspots must be saved in separate SDF files and must be called `donorHotspot.sdf` and `acceptorHotspot.sdf`. When running STRIFE, specify `--model_type 1` and `--output_directory <directory_to_store_output>` so that STRIFE knows to use the manually specified hotspots and where to find them.
 
+![Hotspots Lattice](latticeExample3.png)
 
+Once the pharmacophoric points have been manually specified, you can generate elaborations with STRIFE using (for example):
+
+```
+conda activate STRIFE
+python STRIFE.py -f example/1q8t_frag.sdf -s example/1q8t_frag_smiles.smi -p example/1q8t_protein.pdb -o <directory_to_store_output> --model_type 1
+```
+
+# Contact (Questions/Bugs/Requests)
+
+Please contact Tom Hadfield, at hadfield@stats.ox.ac.uk
