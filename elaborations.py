@@ -220,6 +220,8 @@ class elaborate:
         #Remove tempDir
         tempDir.cleanup()
         
+        #print(outDF)
+
         return outDF
     
     
@@ -320,10 +322,11 @@ class elaborate:
         
         
             g = self.generateMolsFromSpecificProfile(fragSmiles, elabLengths[idx], modelType, profiles[idx], numToGenerate = numElabsPerPoint, smiName=jobName)
-            
+            print(g.shape[0])
+
             if filterQuality:
                 g = self.filterGeneratedMols(g)
-            
+            print(g.shape[0])
             #Append g onto the list of molecules to be docked:
             Hotspot.profileElabs = Hotspot.profileElabs.append(g[['frag', 'full', 'gen']])
 

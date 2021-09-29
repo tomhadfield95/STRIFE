@@ -10,12 +10,12 @@ echo 'Loading PyMol for Manual Pharmacophore Specification'
 
 mkdir ${outStoreDir}
 
-source /data/hookbill/hadfield/CSD/Python_API_2021/miniconda/bin/activate STRIFE
+source <path/to/CSD/Suite>/Python_API_2021/miniconda/bin/activate STRIFE
 python prepareLattice.py ${mol3DPath} ${fragSmilesLoc} ${proteinLoc} ${outStoreDir}
 
 
 
-source /data/hookbill/hadfield/CSD/Python_API_2021/miniconda/bin/activate pymol_env
+source <path/to/CSD/Suite>/Python_API_2021/miniconda/bin/activate pymol_env
 
 python loadLatticeIntoPymol.py ${outStoreDir}
 

@@ -871,7 +871,16 @@ def check_2d_filters_dataset_pandas(data,  pains_smarts_loc='./wehi_pains.csv'):
         pains_smarts = [Chem.MolFromSmarts(line[0], mergeHs=True) for line in csv.reader(f)]
 
     for idx, row in data.iterrows():
+        
+        '''
+        checkSingle = check_2d_filters_Elab([row['gen'], row['elab'], row['frag']], pains_smarts, idx, True)
 
+        if checkSingle:
+            passedFilters.append(1)
+        else:
+            passedFilters.append(0)
+
+        '''
         try:
             checkSingle = check_2d_filters_Elab([row['gen'], row['elab'], row['frag']], pains_smarts, idx, True)
 
@@ -881,7 +890,7 @@ def check_2d_filters_dataset_pandas(data,  pains_smarts_loc='./wehi_pains.csv'):
                 passedFilters.append(0)
         except:
             passedFilters.append(0)
-    
+        
     data['passed'] = passedFilters
 
     return data

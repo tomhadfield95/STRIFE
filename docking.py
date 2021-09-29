@@ -392,7 +392,7 @@ class docking:
 
         Hotspot.dockingFname = fname #Save the name of the file we'll save the hotspots to. 
         Hotspot.countsIdx, Hotspot.countsSDFIdx = self.getSDFs(Hotspot.profileElabs, core, fname) #Saves sdfs to fname
-
+        
         return Hotspot
 
 
@@ -437,7 +437,8 @@ class docking:
                 mols.append(mHs)
             else:
                 mols.append('Could not embed molecule - not docking')
-            
+        
+
         #Now write mols to file
         w = Chem.SDWriter(outName)
         for m in mols:

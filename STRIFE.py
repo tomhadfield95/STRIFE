@@ -701,7 +701,7 @@ if __name__=='__main__':
                         help = 'Directory to store the calculated hotspots map - should only be used if calculate_hotspots = True')
     parser.add_argument('--load_specified_pharms', '-m', type = bool, default = False, 
                         help = 'Use pharmacophores that have been manually specfied instead of ones derived from FHMs. If True, the output_directory should contain at least one of donorHotspot.sdf or acceptorHotspot.sdf')    
-    parser.add_argument('--path_length_model', type = str, default = '/data/hookbill/hadfield/noActives/pathSVMNew.pickle', 
+    parser.add_argument('--path_length_model', type = str, default = 'pathLengthPred_saved.pickle', 
                         help = 'Location of saved SVM for predicting path distances')
     
     parser.add_argument('--model_type', '-t', type = int, default = 0,
