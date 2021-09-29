@@ -104,7 +104,9 @@ There are a variety of extra arguments which can be provided to the model, the m
 We run STRIFE on one of the examples in our test set derived from CASF-2016 (PDB ID 1Q8T). The ground truth ligand (`examples/1q8t_ligand.sdf`) was fragmented to yield a fragment for elaboration. We have already calculated the FHM (`example/hotspotsOut/out.zip`), so STRIFE doesn't need to calculate it before commencing.
 
 ```
-python STRIFE.py -f example/1q8t_frag.sdf -s example/1q8t_frag_smiles.smi -p example/1q8t_protein.pdb -z example/hotspotsOut/out.zip -o example/STRIFE_1q8t
+export STRIFE_DIR=<path/to/STRIFE/directory>
+#Necessary to specify the full path of files when doing the using multiprocessing for docking in GOLD.
+python STRIFE.py -f ${STRIFE_DIR}/example/1q8t_frag.sdf -s ${STRIFE_DIR}/example/1q8t_frag_smiles.smi -p ${STRIFE_DIR}/example/1q8t_protein.pdb -z ${STRIFE_DIR}/example/hotspotsOut/out.zip -o ${STRIFE_DIR}/example/STRIFE_1q8t
 ```
 
 # Using PyMol
@@ -156,7 +158,8 @@ Once the pharmacophoric points have been manually specified, you can generate el
 
 ```
 conda activate STRIFE
-python STRIFE.py -f example/1q8t_frag.sdf -s example/1q8t_frag_smiles.smi -p example/1q8t_protein.pdb -o <directory_to_store_output> --model_type 1
+export STRIFE_DIR=<path/to/STRIFE/directory>
+python STRIFE.py -f ${STRIFE_DIR}/example/1q8t_frag.sdf -s ${STRIFE_DIR}/example/1q8t_frag_smiles.smi -p ${STRIFE_DIR}/example/1q8t_protein.pdb -o <directory_to_store_output> --model_type 1
 ```
 
 # Contact (Questions/Bugs/Requests)
