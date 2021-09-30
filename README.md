@@ -63,6 +63,23 @@ conda env create -f STRIFE_environment.yml
 conda activate STRIFE
 ```
 
+## Installing the Hotspots API
+
+We found that there were compatibility issues with the conda/pip version of the Hotspots API and the most recent version of GHECOM. This can be gotten around by installing the latest version of the Hotspots API as follows:
+
+```
+mkdir ./hotspots_code
+cd hotspots_code
+
+git clone git@github.com:prcurran/hotspots.git
+conda activate STRIFE
+pip install ./hotspots
+
+```
+
+This should then allow you to calculate Fragment Hotspot Maps (see below for more information).
+
+
 ## Setting Environment Variables
 
 You will need to specify a handful of environment variables:
