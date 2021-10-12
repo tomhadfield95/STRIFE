@@ -75,61 +75,21 @@ class STRIFE:
         
         print('Doing argument checking...')
         
-        if args.protein is None:
-            print('Please specify the path to a PDB file')
-            return
+        assert bool(args.protein) == 1, 'Please specify the path to a PDB file'
+        assert bool(args.fragment_sdf) == 1, 'Please specify the location of the fragment SDF. This can also be an SDF of a larger ligand of which the fragment is a substructure'
+        assert bool(args.fragment_smiles) == 1, 'Please specify the location of a text file which contains the SMILES string of the fragment. The exit vector should be denoted by a dummy atom.'
         
-        if args.fragment_sdf is None:
-            print('Please specify the location of the fragment SDF. This can also be an SDF of a larger ligand of which the fragment is a substructure')
-            return
-        
-        if args.fragment_smiles is None:
-            print('Please specify the location of a text file which contains the SMILES string of the fragment. The exit vector should be denoted by a dummy atom.')
-            return
-        
-        
-        
-        #Check that we're picking a valid setting for the STRIFE algorithm
-        if args.model_type not in [0, 1, 2]:
-            print('Please provide a valid setting for generating molecules\n')
-            print('0: Run the standard STRIFE algorithm\n')
-            print('1: Attempt to simultaneously satisfy multiple pharmacophoric points\n')
-            print('2: Run the STRIFE algorithm without the Refinement phrase.')
-            
-            return
+     
+        assert args.model_type in [0, 1, 2], 'Please provide a valid setting for generating molecules: 0, 1 or 2. See the "Running STRIFE" section of the github readme for more details'
         
         
         #Check that we're inputting a valid pharmacophoric representation
-        if args.hotspots_output is None:
-            
-            #if not providing hotspots output we must either request the model to calculate an FHM or provide our own pharmacophoric points
-            if args.calculate_hotspots == False and args.load_specified_pharms == False:
-                print('Please either specify the location of a Fragment Hotspots Map, or request that STRIFE calculates an FHM, or manually specify a set of pharmacophoric points')
-                return 
+        assert bool(args.hotspots_output) + bool(args.calculate_hotspots) + bool(args.load_specified_pharms) == 1, 'Please specify exactly one way for STRIFE to incorporate structural information. Either provide an already calculated FHM, request that STRIFE calculates an FHM, or provide your own pharmacophoric points'
         
-            if args.calculate_hotspots == True and args.load_specified_pharms == True:
-                print('Please only specify a single way of incorporating pharmacophoric information. --calculate_hotspots and --load_specified_pharms cannot both be True')
-                return
-            
-        else:
-            
-            if 'zip' not in args.hotspots_output:
-                print('--hotspots_output should be the location of a zip file and should be the output from running the FHM algorithm')
-                return
-                
-            if args.calculate_hotspots == True or args.load_specified_pharms == True:
-                print('Please only specify a single way of incorporating pharmacophoric information. if you use --hotspots_output to specify an FHM, --calculate_hotspots and --load_specified_pharms should both be left as False (their default value)')
-                return
-        
-        if args.calculate_hotspots == True and args.calculated_hotspots_dir is None:
-            print('Please specify a directory to store the hotspots output (Note: If the specified directory does not exist, it will be created)')
-            return
 
         print('Argument checking complete.')
         
         print('Processing pharmacophoric information')
-        
-        
         
         
         self.storeLoc = args.output_directory
@@ -144,12 +104,12 @@ class STRIFE:
         if args.hotspots_output is not None:
             self.hotspotsLoc = args.hotspots_output
         
-        if args.calculate_hotspots:
+        if bool(args.calculate_hotspots):
             print('Calculating Fragment Hotspot Map for input protein...\n')
             print('This may take a few minutes...\n')
                 
-            self.preprocessing.calculateFHM(args.protein, args.calculated_hotspots_dir)
-            self.hotspotsLoc = f'{args.calculated_hotspots_dir}/out.zip'
+            self.preprocessing.calculateFHM(args.protein, args.calculated_hotspots)
+            self.hotspotsLoc = f'{args.calculated_hotspots}/out.zip'
             print(f'FHM calculation complete. Output saved at {self.hotspotsLoc}')
         
         
@@ -160,7 +120,8 @@ class STRIFE:
                 print('If manually specifying pharmacophoric points, please provide at least one point\n')
                 print(f'Donors should be saved in the file {self.storeLoc}/donorHotspot.sdf\n')
                 print(f'Acceptors should be saved in the file {self.storeLoc}/acceptorHotspot.sdf\n')
-                return
+                raise ValueError('If manually specifying pharmacophoric points, please provide at least one point')
+                
             elif len(glob.glob(f'{self.storeLoc}/acceptorHotspot.sdf')) == 0:
                 hotspotsDict = {}
                 hotspotsDict['Acceptor'] = Chem.RWMol()
@@ -695,10 +656,10 @@ if __name__=='__main__':
     
     parser.add_argument('--hotspots_output', '-z', type = str, default = None,
                         help = 'Location of zip file containing hotspots output, if already calculated')
-    parser.add_argument('--calculate_hotspots', '-c', type = bool, default = False,
-                        help = 'Calculate fragment hotspot map - should be used if you have not already calculated one')
-    parser.add_argument('--calculated_hotspots_dir', '-d', type = str, default = None, 
-                        help = 'Directory to store the calculated hotspots map - should only be used if calculate_hotspots = True')
+    parser.add_argument('--calculate_hotspots', '-c', type = str, default = None,
+                        help = 'Location to save a FHM - if not None, then STRIFE will calculate an FHM, store it in the specified location and use it to generate molecules')
+    #parser.add_argument('--calculated_hotspots_dir', '-d', type = str, default = None, 
+    #                    help = 'Directory to store the calculated hotspots map - should only be used if calculate_hotspots = True')
     parser.add_argument('--load_specified_pharms', '-m', type = bool, default = False, 
                         help = 'Use pharmacophores that have been manually specfied instead of ones derived from FHMs. If True, the output_directory should contain at least one of donorHotspot.sdf or acceptorHotspot.sdf')    
     parser.add_argument('--path_length_model', type = str, default = 'pathLengthPred_saved.pickle', 
