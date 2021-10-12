@@ -168,6 +168,8 @@ class preprocessing:
         #2. Align the fragment molecule to the molecule with the dummy atom, so that we can extract information about the exit vector and set up the constraint file for the docking
         
         molWithBondOrders = self.assignBondOrderTo3DMol(mol3D)
+        
+        
         fragMol = Chem.MolFromSmiles(fragSmiles)
         
         if molWithBondOrders.GetNumHeavyAtoms() > fragMol.GetNumHeavyAtoms():

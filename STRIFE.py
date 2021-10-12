@@ -83,7 +83,7 @@ class STRIFE:
         #Check whether args.fragment_smiles is a file
         
         if os.path.exists(os.path.expanduser(args.fragment_smiles)):
-            args.fragment_smiles = os.path.abspath(os.path.expanduser(args.protein))
+            args.fragment_smiles = os.path.abspath(os.path.expanduser(args.fragment_smiles))
             smiles_file = True
         else:
             #Check that we can parse it with RDKit
@@ -107,15 +107,7 @@ class STRIFE:
         assert os.path.exists(args.fragment_sdf), f'Specified fragment SDF file, {args.fragment_sdf}, does not exist'
         
         
-        #####################################
         
-        #Want to be able to include the fragment either as a file or a string
-        
-        args.fragment_smiles = os.path.abspath(os.path.expanduser(args.fragment_smiles))
-        assert os.path.exists(args.fragment_smiles), f'Specified fragment smiles file, {args.fragment_smiles}, does not exist'
-
-
-        #####################################
         
      
         assert args.model_type in [0, 1, 2], 'Please provide a valid setting for generating molecules: 0, 1 or 2. See the "Running STRIFE" section of the github readme for more details'
@@ -184,15 +176,16 @@ class STRIFE:
         else:
             fragSmiles = args.fragment_smiles
             
+        
         #Store in the output directory:
         
         with open(f'{self.storeLoc}/frag_smiles.smi', 'w') as f:
-            fragSmiles = f.write(fragSmiles)
+            f.write(fragSmiles)
         
             
-        fragMol = Chem.SDMolSupplier(args.fragment_sdf)[0]
+        fragMol3D = Chem.SDMolSupplier(args.fragment_sdf)[0]
             
-        fc, evI, evp, fc2 = self.preprocessing.preprocessFragment(fragSmiles, fragMol)
+        fc, evI, evp, fc2 = self.preprocessing.preprocessFragment(fragSmiles, fragMol3D)
         
         #Save fragment SDF
         Chem.MolToMolFile(fc, f'{self.storeLoc}/frag.sdf')
