@@ -14,7 +14,7 @@ Main class for STRIFE algorithm
 import json
 import time
 import argparse
-
+import os
 
 #import warnings
 #warnings.filterwarnings("ignore",category=DeprecationWarning)
@@ -77,7 +77,45 @@ class STRIFE:
         
         assert bool(args.protein) == 1, 'Please specify the path to a PDB file'
         assert bool(args.fragment_sdf) == 1, 'Please specify the location of the fragment SDF. This can also be an SDF of a larger ligand of which the fragment is a substructure'
-        assert bool(args.fragment_smiles) == 1, 'Please specify the location of a text file which contains the SMILES string of the fragment. The exit vector should be denoted by a dummy atom.'
+        assert bool(args.fragment_smiles) == 1, 'Please specify the location of a text file which contains the SMILES string of the fragment or a SMILES string. The exit vector should be denoted by a dummy atom.'
+        
+        
+        #Check whether args.fragment_smiles is a file
+        
+        if os.path.exists(os.path.expanduser(args.fragment_smiles)):
+            args.fragment_smiles = os.path.abspath(os.path.expanduser(args.protein))
+            smiles_file = True
+        else:
+            #Check that we can parse it with RDKit
+            try:
+                if Chem.MolFromSmiles(args.fragment_smiles).GetNumHeavyAtoms() > 0:
+                    smiles_file = False
+                else: 
+                    raise ValueError('Fragment must have at least one heavy atom')
+            except:
+                
+                raise ValueError("The supplied fragment_smiles doesn't appear to be a file and RDKit is unable to parse it as a molecule. Please check that you're providing a valid fragment")
+        
+        
+        
+        #Convert the provided paths to the absolute path 
+        args.protein = os.path.abspath(os.path.expanduser(args.protein))
+        args.fragment_sdf = os.path.abspath(os.path.expanduser(args.fragment_sdf))
+
+        #Check that the arguments exist
+        assert os.path.exists(args.protein), f'Specified protein file, {args.protein}, does not exist'
+        assert os.path.exists(args.fragment_sdf), f'Specified fragment SDF file, {args.fragment_sdf}, does not exist'
+        
+        
+        #####################################
+        
+        #Want to be able to include the fragment either as a file or a string
+        
+        args.fragment_smiles = os.path.abspath(os.path.expanduser(args.fragment_smiles))
+        assert os.path.exists(args.fragment_smiles), f'Specified fragment smiles file, {args.fragment_smiles}, does not exist'
+
+
+        #####################################
         
      
         assert args.model_type in [0, 1, 2], 'Please provide a valid setting for generating molecules: 0, 1 or 2. See the "Running STRIFE" section of the github readme for more details'
@@ -139,8 +177,18 @@ class STRIFE:
         print('Preprocessing fragment')
         
         #Preprocess Fragments
-        with open(args.fragment_smiles, 'r') as f:
-            fragSmiles = f.read()
+        if smiles_file:
+            with open(args.fragment_smiles, 'r') as f:
+                fragSmiles = f.read()
+            
+        else:
+            fragSmiles = args.fragment_smiles
+            
+        #Store in the output directory:
+        
+        with open(f'{self.storeLoc}/frag_smiles.smi', 'w') as f:
+            fragSmiles = f.write(fragSmiles)
+        
             
         fragMol = Chem.SDMolSupplier(args.fragment_sdf)[0]
             
@@ -182,7 +230,7 @@ class STRIFE:
 
         
         self.exitVectorPos = evp
-        self.frag = args.fragment_smiles
+        self.frag = f'{self.storeLoc}/frag_smiles.smi'
         self.fragCore = fc
         self.constraintFile = f'{self.storeLoc}/constraint.mol2'
         self.cavityLigandFile = args.fragment_sdf #Used for docking in GOLD to define the binding pocket
