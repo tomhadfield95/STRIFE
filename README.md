@@ -176,7 +176,7 @@ Once the pharmacophoric points have been manually specified, you can generate el
 ```
 conda activate STRIFE
 export STRIFE_DIR=<path/to/STRIFE/directory>
-python STRIFE.py -f ${STRIFE_DIR}/example/1q8t_frag.sdf -s ${STRIFE_DIR}/example/1q8t_frag_smiles.smi -p ${STRIFE_DIR}/example/1q8t_protein.pdb -o <directory_to_store_output> --model_type 1
+python STRIFE.py -f ${STRIFE_DIR}/example/1q8t_frag.sdf -s ${STRIFE_DIR}/example/1q8t_frag_smiles.smi -p ${STRIFE_DIR}/example/1q8t_protein.pdb -o <directory_to_store_output> --load_specified_pharms True --model_type 1
 ```
 
 # Contact (Questions/Bugs/Requests)
