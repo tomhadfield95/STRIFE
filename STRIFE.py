@@ -701,7 +701,7 @@ if __name__=='__main__':
                         help = 'Location to save a FHM - if not None, then STRIFE will calculate an FHM, store it in the specified location and use it to generate molecules')
     #parser.add_argument('--calculated_hotspots_dir', '-d', type = str, default = None, 
     #                    help = 'Directory to store the calculated hotspots map - should only be used if calculate_hotspots = True')
-    parser.add_argument('--load_specified_pharms', '-m', type = bool, default = False, 
+    parser.add_argument('--load_specified_pharms', '-m', action = "store_true", 
                         help = 'Use pharmacophores that have been manually specfied instead of ones derived from FHMs. If True, the output_directory should contain at least one of donorHotspot.sdf or acceptorHotspot.sdf')    
     parser.add_argument('--path_length_model', type = str, default = 'pathLengthPred_saved.pickle', 
                         help = 'Location of saved SVM for predicting path distances')
