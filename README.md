@@ -1,6 +1,6 @@
 # STRIFE (STRucture Informed Fragment Elaboration)
 
-This repository contains our implementation of the STRIFE algorithm, described in this biorxiv preprint (TODO: Provide link when up).
+This repository contains our implementation of the STRIFE algorithm, described in this [biorxiv preprint](https://www.biorxiv.org/content/10.1101/2021.10.21.465268v1).
 
 
 
