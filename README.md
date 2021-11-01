@@ -158,6 +158,21 @@ python pymol_file.py
 
 Which will load a PyMol session with the FHM displayed
 
+# Specifying a fragment exit vector
+
+STRIFE requires the user to pick an atom in the fragment to be used as an exit vector - all elaborations will be attached to the specified atom. When inputting the fragment SMILES, STRIFE requires the exit vector to be bonded to a dummy atom. To facilitate this, we provide a short script which writes an image of the molecule (example below) where each atom is numbered with its index. The user can then choose the atom they wish to use as an exit vector and the script will return a SMILES string which can be used as input to STRIFE.
+
+Simply run:
+
+```
+python specifyExitVector.py <fragment_SDF> <location_to_save_image> (<location_to_save_smiles_string> (optional))
+```
+Inspect the image and follow the instruction to provide an atom index as input(). The resulting SMILES string will be printed to the console, and written to file if requested.
+
+An example of a numbered molecule is below:
+
+![Numbered Molecule](numberedMolecule.png)
+
 
 # Manually Specifying Pharmacophoric Points
 
