@@ -376,7 +376,7 @@ class STRIFE:
             self.pharmElabsTestFilter = self.elaborate.filterGeneratedMols(self.pharmElabsTestSample)
     
             #Now prepare for docking 
-            self.pharmElabsTestFName = f'{self.storeLoc}/pharmsElabsTest.sdf'
+            self.pharmElabsTestFName = f'{self.storeLoc}/pharmsElabsTestPreDocking.sdf'
             self.pharmElabsCountsIdx, self.pharmElabsCountsSDFIdx = self.docking.getSDFs(self.pharmElabsTestFilter, self.fragCore, self.pharmElabsTestFName) 
 
             #Do docking
@@ -384,7 +384,19 @@ class STRIFE:
 
             #Compute ligand Efficiency
             self.pharmElabsTestLigEff = self.docking.ligandEfficiency(self.pharmElabsTestDocks, self.pharmElabsTestFS)
-    
+
+            #Write the docks to file with the ligand efficiency as an attribute
+            self.pharmElabsDockedFName = f'{self.storeLoc}/pharmsElabsTestDocked.sdf'
+            w = Chem.SDWriter(self.pharmElabsDockedFName)
+            
+            for idx, m in enumerate(self.pharmElabsTestDocks):
+                m.SetProp('STRIFE_LigEff_Score', self.pharmElabsTestFS[idx]/m.GetNumHeavyAtoms())
+                w.write(m)
+
+            w.close()
+
+
+
 
     
     def elaborationsWithoutRefinement(self, counts = True, totalNumElabs = 250, numElabsPerPoint = 250):
@@ -420,6 +432,19 @@ class STRIFE:
                     
                 #Calculate Ligand Efficiency
                 self.singleElabs_noRefine[k].ligEff = self.docking.ligandEfficiency(self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores)
+                
+                
+                #Write the docks to file with the ligand efficiency as an attribute
+                w = Chem.SDWriter(f'{self.storeLoc}/countElabsNoRefine{k}_Docked.sdf')
+                
+                for idx, m in enumerate(self.singleElabs_noRefine[k].docks):
+                    m.SetProp('STRIFE_LigEff_Score', self.singleElabs_noRefine[k].fitnessScores/m.GetNumHeavyAtoms())
+                    w.write(m)
+    
+                w.close()
+
+                
+                
                 
         else:
             
@@ -462,6 +487,17 @@ class STRIFE:
 
             #Compute ligand Efficiency
             self.elabsTestNoRefineLigEff = self.docking.ligandEfficiency(self.elabsTestNoRefineDocks, self.elabsTestNoRefineFS)
+    
+    
+            #Write the docks to file with the ligand efficiency as an attribute
+            w = Chem.SDWriter(f'{self.storeLoc}/elabsTestNoRefine_Docked.sdf')
+            
+            for idx, m in enumerate(self.elabsTestNoRefineDocks):
+                m.SetProp('STRIFE_LigEff_Score', self.elabsTestNoRefineFS/m.GetNumHeavyAtoms())
+                w.write(m)
+    
+                w.close()
+    
     
         
     def runCustomPharms(self, numElabsRefinement = 250, numElabsExploration = 250):
@@ -516,6 +552,16 @@ class STRIFE:
         #Compute ligand Efficiency
         self.pharmElabsTestMultiLigEff = self.docking.ligandEfficiency(self.pharmElabsTestMultiDocks, self.pharmElabsTestMultiFS)
         
+        #Write the docks to file with the ligand efficiency as an attribute
+        self.pharmElabsTestMultiDockedFName = f'{self.storeLoc}/pharmsElabsTestMultiDocked.sdf'
+        w = Chem.SDWriter(self.pharmElabsTestMultiDockedFName)
+        
+        for idx, m in enumerate(self.pharmElabsTestMultiDocks):
+            m.SetProp('STRIFE_LigEff_Score', self.pharmElabsTestMultiFS[idx]/m.GetNumHeavyAtoms())
+            w.write(m)
+
+        w.close()
+    
     
     
 class HotspotSingle:
@@ -579,7 +625,7 @@ class HotspotSingle:
 
         elabLengths.append(predPathLengthAro + 1) #Predicted atom count +2
         elabLengths.append(predPathLengthAro + 2) #Predicted atom count +3
-        elabLengths.append(predPathLengthAro + 3) #Predicted atom count + 4
+        elabLengths.append(predPathLengthAro + 3) #Predicted atom count +4
 
         profiles.append([0, 0, acceptorCount, donorCount, 1])
         profiles.append([0, 0, acceptorCount, donorCount, 1])
@@ -707,11 +753,11 @@ if __name__=='__main__':
                         help = 'Location of saved SVM for predicting path distances')
     
     parser.add_argument('--model_type', '-t', type = int, default = 0,
-                        help = 'Specify which setting you wish to generate the molecules with: 0 -> default STRIFE algorithm, 1 -> simultaneously satisfy multiple pharmacophoric points (only recommended if you have manually specified the pharmacophores), 2 -> run the STRIFE algorithm without refinement.')
+                        help = 'Specify which setting you wish to generate the molecules with: 0 -> default STRIFE algorithm, 1 -> simultaneously satisfy multiple pharmacophoric points (only recommended if you have manually specified the pharmacophores), 2 -> run the STRIFE algorithm without refinement. Default %(default)s')
     parser.add_argument('--number_elaborations', '-n', type = int, default = 250,
-                        help = 'Final number of elaborations for the model to generate')
+            help = 'Final number of elaborations for the model to generate. Default: %(default)s')
     parser.add_argument('--number_elaborations_exploration', '-e', type = int, default = 250,
-                        help = 'Number of elaborations to make per pharmacophoric point in the exploration phase')
+            help = 'Number of elaborations to make per pharmacophoric point in the exploration phase. Default: %(default)s')
     parser.add_argument('--name', type = str, default = None,
                         help = 'Model name for saving the model. If None (the default argument) then the model will be saved as STRIFE_{date and time}.pickle')
     
