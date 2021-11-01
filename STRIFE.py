@@ -32,6 +32,7 @@ from functools import partial
 import glob
 import openbabel
 from datetime import datetime
+from specifyExitVector import addDummyAtomToMol
 
 #########RDKit Modules############
 import rdkit
@@ -77,26 +78,7 @@ class STRIFE:
         
         assert bool(args.protein) == 1, 'Please specify the path to a PDB file'
         assert bool(args.fragment_sdf) == 1, 'Please specify the location of the fragment SDF. This can also be an SDF of a larger ligand of which the fragment is a substructure'
-        assert bool(args.fragment_smiles) == 1, 'Please specify the location of a text file which contains the SMILES string of the fragment or a SMILES string. The exit vector should be denoted by a dummy atom.'
-        
-        
-        #Check whether args.fragment_smiles is a file
-        
-        if os.path.exists(os.path.expanduser(args.fragment_smiles)):
-            args.fragment_smiles = os.path.abspath(os.path.expanduser(args.fragment_smiles))
-            smiles_file = True
-        else:
-            #Check that we can parse it with RDKit
-            try:
-                if Chem.MolFromSmiles(args.fragment_smiles).GetNumHeavyAtoms() > 0:
-                    smiles_file = False
-                else: 
-                    raise ValueError('Fragment must have at least one heavy atom')
-            except:
-                
-                raise ValueError("The supplied fragment_smiles doesn't appear to be a file and RDKit is unable to parse it as a molecule. Please check that you're providing a valid fragment")
-        
-        
+        assert bool(args.fragment_smiles) + bool(args.exit_vector_idx) == 1, 'Please specify exactly one of: The location of a text file which contains the SMILES string of the fragment or a SMILES string (as the argument fragment_smiles) or the atomic index of the desired exit vector (as the argument exit_vector).'
         
         #Convert the provided paths to the absolute path 
         args.protein = os.path.abspath(os.path.expanduser(args.protein))
@@ -105,6 +87,40 @@ class STRIFE:
         #Check that the arguments exist
         assert os.path.exists(args.protein), f'Specified protein file, {args.protein}, does not exist'
         assert os.path.exists(args.fragment_sdf), f'Specified fragment SDF file, {args.fragment_sdf}, does not exist'
+        
+        
+        if args.fragmentSmiles is not None:
+            
+            #Check whether args.fragment_smiles is a file
+            if os.path.exists(os.path.expanduser(args.fragment_smiles)):
+                args.fragment_smiles = os.path.abspath(os.path.expanduser(args.fragment_smiles))
+                smiles_file = True
+            else:
+                #Check that we can parse it with RDKit
+                try:
+                    if Chem.MolFromSmiles(args.fragment_smiles).GetNumHeavyAtoms() > 0:
+                        smiles_file = False
+                    else: 
+                        raise ValueError('Fragment must have at least one heavy atom')
+                except:
+                    
+                    raise ValueError("The supplied fragment_smiles doesn't appear to be a file and RDKit is unable to parse it as a molecule. Please check that you're providing a valid fragment")
+        
+            if smiles_file:
+                with open(args.fragment_smiles, 'r') as f:
+                    fragSmiles = f.read()
+            
+            else:
+                fragSmiles = args.fragment_smiles
+            
+        
+        else:
+            #using exit_vector_idx instead
+            mol = Chem.SDMolSupplier(args.fragment_sdf)[0]
+            molWithDummyAtom = addDummyAtomToMol(mol, args.exit_vector_idx)
+            fragSmiles = Chem.MolToSmiles(molWithDummyAtom)
+        
+        
         
         
         
@@ -166,19 +182,10 @@ class STRIFE:
                 hotspotsDict['Donor'] = Chem.MolFromMolFile(f'{self.storeLoc}/donorHotspot.sdf')
         
         
+        
         print('Preprocessing fragment')
         
-        #Preprocess Fragments
-        if smiles_file:
-            with open(args.fragment_smiles, 'r') as f:
-                fragSmiles = f.read()
-            
-        else:
-            fragSmiles = args.fragment_smiles
-            
-        
-        #Store in the output directory:
-        
+        #Store fragment SMILES in the output directory:
         with open(f'{self.storeLoc}/frag_smiles.smi', 'w') as f:
             f.write(fragSmiles)
         
@@ -733,8 +740,12 @@ if __name__=='__main__':
     
     parser.add_argument('--fragment_sdf', '-f', type = str, required = True,
                         help = 'Location of fragment SDF. Can be an SDF file of a larger ligand for which the fragment is a substructure')
-    parser.add_argument('--fragment_smiles', '-s', type = str, required = True,
-                        help = 'Location of file containing fragment smiles string. The exit vector should be denoted by a dummy atom')
+    parser.add_argument('--fragment_smiles', '-s', type = str, default = None,
+                        help = 'Location of file containing fragment smiles string. The exit vector should be denoted by a dummy atom. Either you must specify an exit_vector_index or provide a fragment_smiles.')
+    parser.add_argument('--exit_vector_idx', '-v', type = int, default = None,
+                        help = 'The atomic index of the atom you wish to use as an exit vector. Either you must specify an exit_vector_index or provide a fragment_smiles. If you provide an exit_vector_index, then STRIFE can only use the molecule provided in fragment_sdf to make elaborations, whereas you can use fragment_smiles to make elaborations to substructures of the molecule provided in fragment_sdf.'  )
+    
+    
     parser.add_argument('--protein', '-p', type = str, required = True,
                         help = 'Location of protein pdb file (should have already been protonated)')
     parser.add_argument('--output_directory', '-o', type = str, default = '.', 
