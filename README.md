@@ -169,7 +169,7 @@ python specifyExitVector.py <fragment_SDF> <location_to_save_image> (<location_t
 ```
 Inspect the image and follow the instruction to provide an atom index as input(). The resulting SMILES string will be printed to the console, and written to file if requested.
 
-An example of a numbered molecule is below:
+An example of a numbered molecule is below (the unnumbered atom has index 0):
 
 ![Numbered Molecule](numberedMolecule.png)
 
