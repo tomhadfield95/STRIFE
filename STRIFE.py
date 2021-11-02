@@ -402,7 +402,8 @@ class STRIFE:
 
             w.close()
 
-
+            #Standardise the name of the final df
+            self.rankedElaborationsFinal = self.pharmElabsTestLigEff
 
 
     
@@ -438,7 +439,7 @@ class STRIFE:
                 self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores = self.docking.dockLigandsMP(self.singlePharmElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True)
                     
                 #Calculate Ligand Efficiency
-                self.singleElabs_noRefine[k].ligEff = self.docking.ligandEfficiency(self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores)
+                self.singleElabs_noRefine[k].ligEff = self.docking.ligandEfficiency(self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores) 
                 
                 
                 #Write the docks to file with the ligand efficiency as an attribute
@@ -450,8 +451,12 @@ class STRIFE:
     
                 w.close()
 
-                
-                
+            
+            #Standardise the name of the final df
+            self.rankedElaborationsFinal = pd.DataFrame()
+
+            for k in self.hSingles.keys()
+                self.rankedElaborationsFinal = self.rankedElaborationsFinal.append(self.singleElabs_noRefine[k].ligEff)
                 
         else:
             
@@ -505,6 +510,10 @@ class STRIFE:
     
                 w.close()
     
+
+            #Standardise the name of the final df
+            self.rankedElaborationsFinal = self.elabsTestNoRefineLigEff
+
     
         
     def runCustomPharms(self, numElabsRefinement = 250, numElabsExploration = 250):
@@ -569,7 +578,9 @@ class STRIFE:
 
         w.close()
     
-    
+        #Standardise the name of the final df
+        self.rankedElaborationsFinal = self.pharmElabsTestMultiLigEff
+
     
 class HotspotSingle:
     def __init__(self, hotspotInfo, frag, clf, constraintFile, cavityLigandFile, protein):
