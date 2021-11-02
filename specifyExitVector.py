@@ -100,7 +100,7 @@ if __name__=='__main__':
     
 
 #Usage:
-    #python specifyExitVector.py <fragmentSDF> <imageFileName> (<smilesFileName> (optionally))
+    #python specifyExitVector.py -f <fragmentSDF> -o <imageFileName> 
     
     parser = argparse.ArgumentParser()
 
