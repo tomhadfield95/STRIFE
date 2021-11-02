@@ -104,11 +104,18 @@ python STRIFE.py <arguments>
 
 For information about the different arguments which can be used, run `python STRIFE.py -h`.
 
-STRIFE has three required arguments, which must be passed to the model:
+STRIFE has two required arguments, which must be passed to the model:
 
 * `--fragment_sdf` Location of the fragment SDF. Can be an SDF file of a larger ligand for which the fragment is a substructure (in case the user only has a structure of a larger molecule but wishes to replace an R-group.
-* `--fragment_smiles` Location of file which contains fragment SMILES string. Exit vector should be denoted by a dummy atom.
 * `--protein` Location of a protein pdb file (should already have been protonated to allow docking in GOLD)
+
+In addition, the user must provide information regarding which atom should be used as an exit vector. This can be done using one of the following arguments:
+* `--fragment_smiles`: Either a SMILES string or the location of file which contains fragment SMILES string. Exit vector should be denoted by a dummy atom. Or
+* `--exit_vector_idx`: An integer corresponding to the atom index of the desired exit vector.
+
+`--fragment_smiles` offers a slightly greater degree of flexibility than `--exit_vector_index`, as the user can provide the SMILES string of a molecule which is a substructure of the molecule provided in `--fragment_sdf` and STRIFE will make elaborations to that substructure. This can be useful if the user wanted to explore alternatives to a specific R-group.
+
+
 
 There are a variety of extra arguments which can be provided to the model, the most important of which is `--model_type`, which allows the user to choose which setting to run STRIFE on:
 * `0` runs the default implementation of STRIFE outlined in the paper
@@ -160,14 +167,21 @@ Which will load a PyMol session with the FHM displayed
 
 # Specifying a fragment exit vector
 
-STRIFE requires the user to pick an atom in the fragment to be used as an exit vector - all elaborations will be attached to the specified atom. When inputting the fragment SMILES, STRIFE requires the exit vector to be bonded to a dummy atom. To facilitate this, we provide a short script which writes an image of the molecule (example below) where each atom is numbered with its index. The user can then choose the atom they wish to use as an exit vector and the script will return a SMILES string which can be used as input to STRIFE.
+STRIFE requires the user to pick an atom in the fragment to be used as an exit vector - all elaborations will be attached to the specified atom. When inputting the fragment SMILES, STRIFE requires the exit vector to be bonded to a dummy atom. To facilitate this, we provide a short script which writes an image of the molecule (example below) where each atom is numbered with its index. The user can then provide their desired atom index as an input to STRIFE or request that the script returns a SMILES string that can be provided to STRIFE.
 
-Simply run:
+To generate an image of the fragment with atomic indices, simply run:
 
 ```
-python specifyExitVector.py <fragment_SDF> <location_to_save_image> (<location_to_save_smiles_string> (optional))
+python specifyExitVector.py -f <fragment_SDF> -o <location_to_save_image> 
 ```
-Inspect the image and follow the instruction to provide an atom index as input(). The resulting SMILES string will be printed to the console, and written to file if requested.
+
+To generate a SMILES string that can be directly provided to STRIFE, include the `-r` (`--return_smiles_string`) flag:
+
+```
+python specifyExitVector.py -f <fragment_SDF> -o <location_to_save_image> -r
+```
+
+Inspect the image and follow the instruction to provide an atom index as `input()`. The resulting SMILES string will be printed to the console, and written to file if requested.
 
 An example of a numbered molecule is below (the unnumbered atom has index 0):
 
