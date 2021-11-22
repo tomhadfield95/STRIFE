@@ -164,8 +164,15 @@ class docking:
             '''
     
     
-    
-    
+    def computeDistanceToClosestHotspot(mol, hotspots, single = True):   
+        if single = True:
+            allDistances = []
+            for k in hotspots.keys():
+                allDistances.append(assessSingleDock(mol, hotspots[k], True))
+            
+            return min(allDistances)
+        else:
+            return assessSingleDock(mol, hotspots, False)
     
     def flexDocking(self, ligandsToDockSDF, constraintFile, cavityLigandFile, protein, n_docks = 10, outputFile = 'docked_ligands.sdf', returnFitnessScore = False, conf_file = None, trackFlexibility = None):
 
