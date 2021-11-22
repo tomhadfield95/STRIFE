@@ -165,7 +165,7 @@ class docking:
     
     
     def computeDistanceToClosestHotspot(mol, hotspots, single = True):   
-        if single = True:
+        if single == True:
             allDistances = []
             for k in hotspots.keys():
                 allDistances.append(assessSingleDock(mol, hotspots[k], True))
