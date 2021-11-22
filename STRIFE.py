@@ -88,8 +88,16 @@ class STRIFE:
         assert os.path.exists(args.protein), f'Specified protein file, {args.protein}, does not exist'
         assert os.path.exists(args.fragment_sdf), f'Specified fragment SDF file, {args.fragment_sdf}, does not exist'
         
-        
-        if args.fragmentSmiles is not None:
+        #If the output directory doesn't exist, create it
+        if not os.path.exists(args.output_directory):
+            os.makedirs(args.output_directory)
+
+        args.output_directory = os.path.abspath(os.path.expanduser(args.output_directory))
+
+
+
+
+        if args.fragment_smiles is not None:
             
             #Check whether args.fragment_smiles is a file
             if os.path.exists(os.path.expanduser(args.fragment_smiles)):
@@ -400,7 +408,7 @@ class STRIFE:
             w = Chem.SDWriter(self.pharmElabsDockedFName)
             
             for idx, m in enumerate(self.pharmElabsTestDocks):
-                m.SetProp('STRIFE_LigEff_Score', self.pharmElabsTestFS[idx]/m.GetNumHeavyAtoms())
+                m.SetProp('STRIFE_LigEff_Score', str(self.pharmElabsTestFS[idx]/m.GetNumHeavyAtoms()))
                 w.write(m)
 
             w.close()
@@ -451,7 +459,7 @@ class STRIFE:
                 w = Chem.SDWriter(f'{self.storeLoc}/countElabsNoRefine{k}_Docked.sdf')
                 
                 for idx, m in enumerate(self.singleElabs_noRefine[k].docks):
-                    m.SetProp('STRIFE_LigEff_Score', self.singleElabs_noRefine[k].fitnessScores/m.GetNumHeavyAtoms())
+                    m.SetProp('STRIFE_LigEff_Score', str(self.singleElabs_noRefine[k].fitnessScores/m.GetNumHeavyAtoms()))
                     w.write(m)
     
                 w.close()
@@ -514,7 +522,7 @@ class STRIFE:
             w = Chem.SDWriter(f'{self.storeLoc}/elabsTestNoRefine_Docked.sdf')
             
             for idx, m in enumerate(self.elabsTestNoRefineDocks):
-                m.SetProp('STRIFE_LigEff_Score', self.elabsTestNoRefineFS/m.GetNumHeavyAtoms())
+                m.SetProp('STRIFE_LigEff_Score', str(self.elabsTestNoRefineFS/m.GetNumHeavyAtoms()))
                 w.write(m)
     
                 w.close()
@@ -584,7 +592,7 @@ class STRIFE:
         w = Chem.SDWriter(self.pharmElabsTestMultiDockedFName)
         
         for idx, m in enumerate(self.pharmElabsTestMultiDocks):
-            m.SetProp('STRIFE_LigEff_Score', self.pharmElabsTestMultiFS[idx]/m.GetNumHeavyAtoms())
+            m.SetProp('STRIFE_LigEff_Score', str(self.pharmElabsTestMultiFS[idx]/m.GetNumHeavyAtoms()))
             w.write(m)
 
         w.close()
