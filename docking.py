@@ -44,7 +44,7 @@ from rdkit import RDLogger
 RDLogger.DisableLog('rdApp.*') #Supress annoying RDKit output
 from rdkit import RDConfig
 from rdkit.Chem import ChemicalFeatures
-
+from rdkit.Chem.QED import qed
 
 import pickle
 import addPharmProfile
@@ -457,6 +457,18 @@ class docking:
                 sdfIdx.append(-1) #Indicates that we weren't able to dock this molecule
             
         return dfIdx, sdfIdx
+
+
+    def qed_flag(self, full, frag, threshold = 0):
+        #returns 1 if the elaborated mol has a higher qed than the original fragment and 0 otherwise
+
+        qed_frag = qed(frag)
+        qed_full = qed(full)
+
+        if qed_full - qed_frag > threshold:
+            return 1
+        else:
+            return 0
 
 
 ####Additional Code for parallel docking####
