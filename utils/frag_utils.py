@@ -17,6 +17,10 @@ from itertools import chain, product
 
 from joblib import Parallel, delayed
 
+
+#Util functions mainly taken from DeLinker (Imrie et al.) repo
+
+
 ### Dataset info #####
 def dataset_info(dataset): #qm9, zinc, cep
     if dataset=='qm9':
@@ -844,7 +848,7 @@ def check_2d_filters_Elab(toks, pains_smarts, count=0, verbose=False):
 
 
 
-def check_2d_filters_dataset(fragmentations, n_cores=1, pains_smarts_loc='./wehi_pains.csv'):
+def check_2d_filters_dataset(fragmentations, n_cores=1, pains_smarts_loc='data/wehi_pains.csv'):
     # Load pains filters
     with open(pains_smarts_loc, 'r') as f:
         pains_smarts = [Chem.MolFromSmarts(line[0], mergeHs=True) for line in csv.reader(f)]
@@ -859,7 +863,7 @@ def check_2d_filters_dataset(fragmentations, n_cores=1, pains_smarts_loc='./wehi
 
 
 
-def check_2d_filters_dataset_pandas(data,  pains_smarts_loc='./wehi_pains.csv'):
+def check_2d_filters_dataset_pandas(data,  pains_smarts_loc='data/wehi_pains.csv'):
     #Does much the same as check_2d_filters_dataset_pandas
     #The difference is, we take a pandas dataset as input and return the same dataset with an additional column
     #The column contains 1 if the molecule passed the filters and zero otherwise

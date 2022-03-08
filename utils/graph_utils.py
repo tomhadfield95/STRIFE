@@ -17,6 +17,9 @@ import sascorer
 from rdkit.Chem import Crippen
 from rdkit.Chem import QED
 
+
+#Contains functions mainly relating to generating molecules using the CGVAE
+
 SMALL_NUMBER = 1e-7
 LARGE_NUMBER= 1e10
 

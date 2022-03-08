@@ -47,7 +47,6 @@ from rdkit.Chem import ChemicalFeatures
 from rdkit.Chem.QED import qed
 
 import pickle
-import addPharmProfile
 import os
 
 from ccdc.docking import Docker
@@ -331,7 +330,7 @@ class docking:
             return mols
 
 
-    def dockLigandsMP(self, ligandsToDockSDF, constraintFile, cavityLigandFile, protein, n_processes = 7, ndocks = 10, outputFile = 'docked_ligands.sdf', returnFitnessScore = False):
+    def dockLigandsMP(self, ligandsToDockSDF, constraintFile, cavityLigandFile, protein, n_processes = 1, ndocks = 10, outputFile = 'docked_ligands.sdf', returnFitnessScore = False):
 
         """
         Dock the molecules from the supplied input file in parallel.
@@ -428,8 +427,8 @@ class docking:
                 fail = 0
             except:
                 fail = 1
-                print(idx)
-    
+                print(f'Unable to do constrained embedding on the following molecule: {g}')
+
     
             #Now addHs and reembed:
             mHs = Chem.AddHs(m)
@@ -438,7 +437,7 @@ class docking:
                 fail = 0
             except:
                 fail = 1
-                print(idx)
+                print(f'Unable to do constrained embedding on the following molecule: {g}')
             
             if fail == 0:
                 mols.append(mHs)

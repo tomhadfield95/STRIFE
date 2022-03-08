@@ -1,4 +1,4 @@
-from utils import *
+from utils.graph_utils import *
 from copy import deepcopy
 import random
 

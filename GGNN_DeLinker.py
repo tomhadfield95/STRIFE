@@ -9,8 +9,8 @@ import json
 import numpy as np
 import pickle
 import random
-import utils
-from utils import MLP, dataset_info, ThreadedIterator, graph_to_adj_mat, SMALL_NUMBER, LARGE_NUMBER, graph_to_adj_mat
+from utils.graph_utils import MLP, dataset_info, ThreadedIterator, graph_to_adj_mat, SMALL_NUMBER, LARGE_NUMBER, graph_to_adj_mat
+import utils.graph_utils as utils
 
 class ChemModel(object):
     @classmethod

@@ -32,7 +32,7 @@ from functools import partial
 import glob
 import openbabel
 from datetime import datetime
-from specifyExitVector import addDummyAtomToMol
+from data_prep.specifyExitVector import addDummyAtomToMol
 
 #########RDKit Modules############
 import rdkit
@@ -58,11 +58,11 @@ from docking import docking
 try:
     #Try to import the preprocessing class which uses the CSD package
     from preprocessing import preprocessing
+    from hotspots.hs_io import HotspotReader
 except:
     #If we can't do that import the class without those methods
     from preprocessing_no_hotspots import preprocessing
 
-from hotspots.hs_io import HotspotReader
 
 
 class STRIFE:
@@ -78,15 +78,23 @@ class STRIFE:
         
         assert bool(args.protein) == 1, 'Please specify the path to a PDB file'
         assert bool(args.fragment_sdf) == 1, 'Please specify the location of the fragment SDF. This can also be an SDF of a larger ligand of which the fragment is a substructure'
-        assert bool(args.fragment_smiles) + bool(args.exit_vector_idx) == 1, 'Please specify exactly one of: The location of a text file which contains the SMILES string of the fragment or a SMILES string (as the argument fragment_smiles) or the atomic index of the desired exit vector (as the argument exit_vector).'
+        assert bool(args.fragment_smiles) + bool(args.exit_vector_idx is not None) == 1, 'Please specify exactly one of: The location of a text file which contains the SMILES string of the fragment or a SMILES string (as the argument fragment_smiles) or the atomic index of the desired exit vector (as the argument exit_vector).'
         
         #Convert the provided paths to the absolute path 
         args.protein = os.path.abspath(os.path.expanduser(args.protein))
         args.fragment_sdf = os.path.abspath(os.path.expanduser(args.fragment_sdf))
 
         #Check that the arguments exist
-        assert os.path.exists(args.protein), f'Specified protein file, {args.protein}, does not exist'
-        assert os.path.exists(args.fragment_sdf), f'Specified fragment SDF file, {args.fragment_sdf}, does not exist'
+        
+        if args.protein is None:
+            raise ValueError('You must specify a pdb file as the protein')
+        else:
+            assert os.path.exists(args.protein), f'Specified protein file, {args.protein}, does not exist'
+        
+        if args.fragment_sdf is None:
+            raise ValueError('You must specify an SDF file, either containing the molecule to be used as a fragment, or a superstructure of it')
+        else:
+            assert os.path.exists(args.fragment_sdf), f'Specified fragment SDF file, {args.fragment_sdf}, does not exist'
         
         #If the output directory doesn't exist, create it
         if not os.path.exists(args.output_directory):
@@ -151,6 +159,14 @@ class STRIFE:
         
         self.storeLoc = args.output_directory
         
+        if args.num_cpu_cores > 0:
+            self.num_cpu_cores = args.num_cpu_cores
+        elif args.num_cpu_cores == -1:
+            self.num_cpu_cores = mp.cpu_count()
+        else:
+            raise ValueError("Please supply a valid number of cores to use, or specify num_cpu_cores as -1 to use all available cores")
+
+
         #Create subclasses
         self.elaborate = elaborate()
         self.docking = docking()
@@ -313,13 +329,16 @@ class STRIFE:
         #TODO - Implement
         pass
     
-    def exploration(self, numElabsPerPoint = 250):
+    def exploration(self, numElabsPerPoint = 250, n_cores = None):
         
         #Generate elaborations using the count model
         #Dock them using the constrained docking functionality in GOLD
         #Measure the distance between the pharmacophoric point and a matching 
         #pharmacophore in the elaboration.
         
+        if n_cores is None:
+            n_cores = self.num_cpu_cores
+
         self.singleElabs = {}
         self.singleDocks = {}
         self.singleDistances = {}
@@ -332,13 +351,13 @@ class STRIFE:
             self.singleElabs[k] = HotspotSingle(self.hSingles[k], self.frag, self.clf, self.constraintFile, self.cavityLigandFile, self.protein)
             
             #Make elaborations using the counts model and filter to retain those with the desired pharmacophoric profile
-            self.singleElabs[k] = self.elaborate.makeElaborationsAndFilter(self.singleElabs[k], numElabsPerPoint=numElabsPerPoint)
+            self.singleElabs[k] = self.elaborate.makeElaborationsAndFilter(self.singleElabs[k], numElabsPerPoint=numElabsPerPoint, n_cores = n_cores)
             
             #Prepare the filtered elaborations to be docked in GOLD
             self.singleElabs[k] = self.docking.prepareForDocking(self.singleElabs[k], self.fragCore, f'{self.storeLoc}/countsElabs{k}.sdf')
             
             #do docking
-            self.singleDocks[k] = self.docking.dockLigandsMP(self.singleElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein) #Dock in parallel
+            self.singleDocks[k] = self.docking.dockLigandsMP(self.singleElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, n_processes = n_cores) #Dock in parallel
             
             #Compute distance to pharmacophoric point
             self.singleDistances[k] = self.docking.assessAllDocks(self.singleDocks[k], self.hSingles[k], True)
@@ -354,9 +373,12 @@ class STRIFE:
 
         
     
-    def refinement(self, totalNumElabs = 250):
+    def refinement(self, totalNumElabs = 250, n_cores = None):
         #Use the quasi-actives to generate elaborations using the pharm model
         
+        if n_cores is None:
+            n_cores = self.num_cpu_cores
+
         if totalNumElabs is None:
             #i.e. we want all the elaborations derived from the quasi-actives
             self.singlePharmElabs = {}
@@ -367,7 +389,7 @@ class STRIFE:
                 self.singlePharmElabs[k] = self.docking.prepareForDocking(self.singlePharmElabs[k], self.fragCore, f'{self.storeLoc}/pharmsElabs{k}.sdf')
         
                 #Dock
-                self.singlePharmElabs[k].docks, self.singlePharmElabs[k].fitnessScores = self.docking.dockLigandsMP(self.singlePharmElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True)
+                self.singlePharmElabs[k].docks, self.singlePharmElabs[k].fitnessScores = self.docking.dockLigandsMP(self.singlePharmElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True, n_processes = n_cores)
     
                 #Calculate Ligand Efficiency
                 self.singlePharmElabs[k].ligEff = self.docking.ligandEfficiency(self.singlePharmElabs[k].docks, self.singlePharmElabs[k].fitnessScores)
@@ -391,14 +413,14 @@ class STRIFE:
     
             #Now we have all of the molecules sampled from the quasi active profiles
             self.pharmElabsTestSample = self.pharmElabsTest.sample(n = totalNumElabs, random_state = 10) #Sample the number of elaborations we want
-            self.pharmElabsTestFilter = self.elaborate.filterGeneratedMols(self.pharmElabsTestSample)
+            self.pharmElabsTestFilter = self.elaborate.filterGeneratedMols(self.pharmElabsTestSample, n_cores = n_cores)
     
             #Now prepare for docking 
             self.pharmElabsTestFName = f'{self.storeLoc}/pharmsElabsTestPreDocking.sdf'
             self.pharmElabsCountsIdx, self.pharmElabsCountsSDFIdx = self.docking.getSDFs(self.pharmElabsTestFilter, self.fragCore, self.pharmElabsTestFName) 
 
             #Do docking
-            self.pharmElabsTestDocks, self.pharmElabsTestFS = self.docking.dockLigandsMP(self.pharmElabsTestFName, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True)
+            self.pharmElabsTestDocks, self.pharmElabsTestFS = self.docking.dockLigandsMP(self.pharmElabsTestFName, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True, n_processes = n_cores)
 
             #Compute ligand Efficiency
             self.pharmElabsTestLigEff = self.docking.ligandEfficiency(self.pharmElabsTestDocks, self.pharmElabsTestFS)
@@ -420,8 +442,11 @@ class STRIFE:
                 self.rankedElaborationsFinal.to_csv(f'{self.storeLoc}/rankedElaborationsFinal.csv')
 
     
-    def elaborationsWithoutRefinement(self, counts = True, totalNumElabs = 250, numElabsPerPoint = 250):
+    def elaborationsWithoutRefinement(self, counts = True, totalNumElabs = 250, numElabsPerPoint = 250, n_cores = None):
         
+        if n_cores is None:
+            n_cores = self.num_cpu_cores
+
         if totalNumElabs == None:
             
             #Just
@@ -438,10 +463,10 @@ class STRIFE:
                 if counts:
                     #Make elaborations using the counts model
                     #Filter for elaboration quality before docking, but not on pharmacophoric profile
-                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], numElabsPerPoint=numElabsPerPoint, filterQuality = True)
+                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], numElabsPerPoint=numElabsPerPoint, filterQuality = True, n_cores = n_cores)
                 else:
                     #Make elaborations using the Orig model 
-                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], modelType = 'Orig', numElabsPerPoint=numElabsPerPoint, filterQuality = True)
+                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], modelType = 'Orig', numElabsPerPoint=numElabsPerPoint, filterQuality = True, n_cores = n_cores)
                 
                 
                 #Prepare the filtered elaborations to be docked in GOLD
@@ -449,7 +474,7 @@ class STRIFE:
                 
                 
                 #Now we want to dock and compute ligand efficiency
-                self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores = self.docking.dockLigandsMP(self.singlePharmElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True)
+                self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores = self.docking.dockLigandsMP(self.singlePharmElabs[k].dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True, n_processes = n_cores)
                     
                 #Calculate Ligand Efficiency
                 self.singleElabs_noRefine[k].ligEff = self.docking.ligandEfficiency(self.singleElabs_noRefine[k].docks, self.singleElabs_noRefine[k].fitnessScores) 
@@ -489,10 +514,10 @@ class STRIFE:
                 if counts:
                     #Make elaborations using the counts model
                     #Here we don't filter on quality until the final set of elaborations has been sampled
-                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], numElabsPerPoint=numElabsPerPoint)
+                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], numElabsPerPoint=numElabsPerPoint, n_cores = n_cores)
                 else:
                     #Make elaborations using the Orig model 
-                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], modelType = 'Orig', numElabsPerPoint=numElabsPerPoint)
+                    self.singleElabs_noRefine[k] = self.elaborate.makeElaborationsNoFilter(self.singleElabs_noRefine[k], modelType = 'Orig', numElabsPerPoint=numElabsPerPoint, n_cores = n_cores)
         
     
             #Now we want to take all of the elaborations we've made, sample some of them and then filter
@@ -502,17 +527,17 @@ class STRIFE:
     
             #Now we have all of the molecules sampled from the quasi active profiles
             self.elabsTestNoRefineSample = self.elabsTestNoRefine.sample(n = totalNumElabs, random_state = 10) #Sample the number of elaborations we want
-            self.elabsTestNoRefineFilter = self.elaborate.filterGeneratedMols(self.elabsTestNoRefineSample)
+            self.elabsTestNoRefineFilter = self.elaborate.filterGeneratedMols(self.elabsTestNoRefineSample, n_cores = n_cores)
         
         
             #Now we want to dock these 
             self.elabsTestNoRefineFName = f'{self.storeLoc}/elabsTestNoRefine.sdf'
-            self.elabsTestNoRefineCountsIdx, self.elabsTestNoRefineCountsSDFIdx = self.docking.getSDFs( self.elabsTestNoRefineFilter, self.fragCore, self.elabsTestNoRefineFName) 
+            self.elabsTestNoRefineCountsIdx, self.elabsTestNoRefineCountsSDFIdx = self.docking.getSDFs(self.elabsTestNoRefineFilter, self.fragCore, self.elabsTestNoRefineFName) 
             
             
             
             #Do docking
-            self.elabsTestNoRefineDocks, self.elabsTestNoRefineFS = self.docking.dockLigandsMP(self.elabsTestNoRefineFName, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True)
+            self.elabsTestNoRefineDocks, self.elabsTestNoRefineFS = self.docking.dockLigandsMP(self.elabsTestNoRefineFName, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True, n_processes = n_cores)
 
             #Compute ligand Efficiency
             self.elabsTestNoRefineLigEff = self.docking.ligandEfficiency(self.elabsTestNoRefineDocks, self.elabsTestNoRefineFS)
@@ -535,22 +560,25 @@ class STRIFE:
                 self.rankedElaborationsFinal.to_csv(f'{self.storeLoc}/rankedElaborationsFinal.csv')
     
         
-    def runCustomPharms(self, numElabsRefinement = 250, numElabsExploration = 250):
+    def runCustomPharms(self, numElabsRefinement = 250, numElabsExploration = 250, n_cores = None):
         
         #Version of the STRIFE algorithm which supports running multiple pharmacophoric points simultaneously
         #It's recommended that you only use this with manually specified pharmacophoric points (or at least check those derived by the hotspots algorithm for suitability)
         
+        if n_cores is None:
+            n_cores = self.num_cpu_cores
+
         ########EXPLORATION PHASE##########
         self.multiElabs = HotspotMulti(self.hMulti, self.frag, self.clf, self.constraintFile, self.cavityLigandFile, self.protein)
         
         #Make elaborations using the counts model and filter to retain those with the desired pharmacophoric profile
-        self.multiElabs = self.elaborate.makeElaborationsAndFilter(self.multiElabs, numElabsPerPoint=numElabsExploration)
+        self.multiElabs = self.elaborate.makeElaborationsAndFilter(self.multiElabs, numElabsPerPoint=numElabsExploration, n_cores = n_cores)
         
         #Prepare the filtered elaborations to be docked in GOLD
         self.multiElabs = self.docking.prepareForDocking(self.multiElabs, self.fragCore, f'{self.storeLoc}/countsElabsMulti.sdf')
         
         #do docking
-        self.multiDocks = self.docking.dockLigandsMP(self.multiElabs.dockingFname, self.constraintFile, self.cavityLigandFile, self.protein) #Dock in parallel
+        self.multiDocks = self.docking.dockLigandsMP(self.multiElabs.dockingFname, self.constraintFile, self.cavityLigandFile, self.protein, n_processes = n_cores) #Dock in parallel
         
         #Compute distance to pharmacophoric point
         self.multiDistances = self.docking.assessAllDocks(self.multiDocks, self.hMulti, single = False)
@@ -575,14 +603,14 @@ class STRIFE:
 
         #Now we have all of the molecules sampled from the quasi active profiles
         self.pharmElabsTestMultiSample = self.pharmElabsTestMulti.sample(n = numElabsRefinement, random_state = 10) #Sample the number of elaborations we want
-        self.pharmElabsTestMultiFilter = self.elaborate.filterGeneratedMols(self.pharmElabsTestMultiSample)
+        self.pharmElabsTestMultiFilter = self.elaborate.filterGeneratedMols(self.pharmElabsTestMultiSample, n_cores = n_cores)
 
         #Now prepare for docking 
         self.pharmElabsTestMultiFName = f'{self.storeLoc}/pharmsElabsTestMulti.sdf'
         self.pharmElabsMultiCountsIdx, self.pharmElabsMultiCountsSDFIdx = self.docking.getSDFs(self.pharmElabsTestMultiFilter, self.fragCore, self.pharmElabsTestMultiFName) 
 
         #Do docking
-        self.pharmElabsTestMultiDocks, self.pharmElabsTestMultiFS = self.docking.dockLigandsMP(self.pharmElabsTestMultiFName, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True)
+        self.pharmElabsTestMultiDocks, self.pharmElabsTestMultiFS = self.docking.dockLigandsMP(self.pharmElabsTestMultiFName, self.constraintFile, self.cavityLigandFile, self.protein, returnFitnessScore = True, n_processes = n_cores)
 
         #Compute ligand Efficiency
         self.pharmElabsTestMultiLigEff = self.docking.ligandEfficiency(self.pharmElabsTestMultiDocks, self.pharmElabsTestMultiFS)
@@ -793,7 +821,7 @@ if __name__=='__main__':
     #                    help = 'Directory to store the calculated hotspots map - should only be used if calculate_hotspots = True')
     parser.add_argument('--load_specified_pharms', '-m', action = "store_true", 
                         help = 'Use pharmacophores that have been manually specfied instead of ones derived from FHMs. If True, the output_directory should contain at least one of donorHotspot.sdf or acceptorHotspot.sdf')    
-    parser.add_argument('--path_length_model', type = str, default = 'pathLengthPred_saved.pickle', 
+    parser.add_argument('--path_length_model', type = str, default = 'models/pathLengthPred_saved.pickle', 
                         help = 'Location of saved SVM for predicting path distances')
     
     parser.add_argument('--model_type', '-t', type = int, default = 0,
@@ -806,6 +834,9 @@ if __name__=='__main__':
                         help = 'Model name for saving the model. If None (the default argument) then the model will be saved as STRIFE_{date and time}.pickle')
     parser.add_argument('--write_elaborations_dataset', '-w', action = "store_true", 
             help='Save the DataFrame containing the final elaborations generated by STRIFE as rankedElaborationsFinal.csv')
+
+    parser.add_argument('--num_cpu_cores', '-cpu', type = int, default = 1, 
+            help='Number of CPU cores to use for docking and other computations. Specifiying -1 will use all available cores')
 
     #TODO
     #parser.add_argument('--compute_hotspot_distance', action = "store_true",

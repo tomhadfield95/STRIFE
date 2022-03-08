@@ -18,18 +18,18 @@ RDLogger.DisableLog('rdApp.*') #Supress annoying RDKit output
 from multiprocessing import Pool
 
 ##########
-import frag_utils
+import utils.frag_utils
+import utils.add_pharm_profile
 
 
 
 
-
-savedModelDict = {'Orig':'GenModelDeLinker_saved.pickle',
-                 'Count':'coarseGrainedGenModel_saved.pickle',
-                 'Pharm':'fineGrainedGenModel_saved.pickle'}
-
+savedModelDict = {'Orig':'../models/GenModelDeLinker_saved.pickle',
+                 'Count':'../models/coarseGrainedGenModel_saved.pickle',
+                 'Pharm':'../models/fineGrainedGenModel_saved.pickle'}
 
 
+#Creates an RDKit image of the most commonly generated molecules
 def valueCountsToMols(valueCounts, howmany = None):
 
     if howmany is None:
@@ -40,6 +40,7 @@ def valueCountsToMols(valueCounts, howmany = None):
 
     return img
 
+
 def remove_dummy_atom(smiles):
     mol = Chem.MolFromSmiles(smiles)
     mol2 = AllChem.ReplaceSubstructs(mol, Chem.MolFromSmiles('*'), Chem.MolFromSmiles('[H]'), True)[0]
@@ -47,7 +48,13 @@ def remove_dummy_atom(smiles):
 
     return Chem.MolToSmiles(mol3)
 
+#Does constrained embedding for a generated molecule
 def conEmbed(gen, fragConfFile):
+
+    #gen - SMILES string of the generated molecule
+    #fragConfFile - SDF file containing the fragment structure
+    #output - min conformer of the generated molecule (where the original fragment is constrained)
+
 
     refConf = Chem.SDMolSupplier(fragConfFile)[0]
 
@@ -80,8 +87,6 @@ def getValueCountsImage(data, substructMatchMol = None):
 
 
 
-
-
 def getMultipleSDFs(data, core, outNameCore):
 
     #Iterate over the different indices (i.e. the different pharmacophoric profiles) and pass to getSDFs
@@ -94,8 +99,18 @@ def getMultipleSDFs(data, core, outNameCore):
     
 
 def getSDFs(data, core, outName):
+    
+    #Generates conformers for generated molecules
+
+    #data is a pandas dataframe - the two important columns are:
+        #'frag' - the SMILES of the original fragment with dummy atom denoting the exit vector
+        #'gen' - the generated SMILES
     #Core is the embedded mol we use for the constrained embedding
     
+    
+
+
+
     mols = []
     dfIdx = []
     sdfIdx = []
@@ -143,7 +158,11 @@ def getSDFs(data, core, outName):
 
 #Do Filtering of generated molecules
 
-def parallelize_dataframe(df, func, n_cores=4):
+def parallelize_dataframe(df, func, n_cores=1):
+
+    #helper function which parallelises a function which does operations on a dataframe
+        #such as: Adding whether a particular elaboration passed the 2D filters
+
     df_split = np.array_split(df, n_cores)
     pool = Pool(n_cores)
     df = pd.concat(pool.map(func, df_split))
@@ -152,6 +171,8 @@ def parallelize_dataframe(df, func, n_cores=4):
     return df
 
 def addElab(df):
+
+    #Adds a columns to a dataframe which includes the elaborated substructure of each generated molecule.
 
     elab = []
     for idx, row in df.iterrows():
@@ -168,9 +189,12 @@ def addElab(df):
 
 
 
-def filterGeneratedMols(df):
+def filterGeneratedMols(df, n_cores = 1):
+    
+    #Takes a pandas dataframe containing the generated molecules as input and returns only the rows which
+    #correspond to molecules which have passed the 2d filters
 
-    df = parallelize_dataframe(df, addElab, n_cores = 7)
+    df = parallelize_dataframe(df, addElab, n_cores = n_cores)
     df = frag_utils.check_2d_filters_dataset_pandas(df)
 
     df = df.loc[df['passed'] == 1][['frag', 'full', 'gen', 'elab']]
@@ -566,7 +590,7 @@ def generateMolsFromSpecificProfile(frag, elabLength, modelType, profile, smiNam
     smi.to_csv(f'{smiName}.smi', header = False, index = False, sep = ' ')
 
     smi.columns = ['full', 'chopped', 'frag', 'dist', 'ang']
-    smi['pharm'] = [addPharmProfile.createPharmacophoricProfile(row['frag'], row['full']) for idx, row in smi.iterrows()]
+    smi['pharm'] = [add_pharm_profile.createPharmacophoricProfile(row['frag'], row['full']) for idx, row in smi.iterrows()]
     smi.to_csv(f'{smiName}Pharm.smi', header = None, index = None, sep = ' ')
 
     raw_data = train_valid_split(f'{smiName}Pharm.smi')['valid']

@@ -35,16 +35,15 @@ RDLogger.DisableLog('rdApp.*') #Supress annoying RDKit output
 from fineGrainedGenModel import DenseGGNNChemModel as DenseGGNNChemModelPharm
 from GenModelDeLinker import DenseGGNNChemModel as DenseGGNNChemModelOrig
 from coarseGrainedGenModel import DenseGGNNChemModel as DenseGGNNChemModelCount
-import elabUtils as eUtils
+from utils import elab_utils as eUtils
 
 
 #TODO - review use of these
-import utils
-import single_frag_SMI2JSON_Pharm as s2JSON
-import addPharmProfile 
+from utils import graph_utils, add_pharm_profile, frag_utils
+
+import utils.single_frag_SMI2JSON_Pharm as s2JSON
 
 #import summaryStats
-import frag_utils
 
 
 class elaborate:
@@ -54,9 +53,9 @@ class elaborate:
         
         #Specify the file names of the saved models to be used
         if useDefaultModels:
-            self.savedModelDict = {'Orig':'GenModelDeLinker_saved.pickle',
-                 'Count':'coarseGrainedGenModel_saved.pickle',
-                 'Pharm':'fineGrainedGenModel_saved.pickle'}
+            self.savedModelDict = {'Orig':'models/GenModelDeLinker_saved.pickle',
+                 'Count':'models/coarseGrainedGenModel_saved.pickle',
+                 'Pharm':'models/fineGrainedGenModel_saved.pickle'}
         else:
             self.savedModelDict = models
             
@@ -122,8 +121,8 @@ class elaborate:
             (mol_out, mol_in), nodes_to_keep, exit_points = eUtils.align_smiles_by_frags(smiles_mol, smiles_frag)
             if mol_out == []:
                 continue
-            nodes_in, edges_in = utils.to_graph_mol(mol_in, dataset)
-            nodes_out, edges_out = utils.to_graph_mol(mol_out, dataset)
+            nodes_in, edges_in = graph_utils.to_graph_mol(mol_in, dataset)
+            nodes_out, edges_out = graph_utils.to_graph_mol(mol_out, dataset)
             if min(len(edges_in), len(edges_out)) <= 0:
                 continue
             processed_data.append({
@@ -178,7 +177,7 @@ class elaborate:
         smi.to_csv(f'{tempDir.name}/{smiName}.smi', header = False, index = False, sep = ' ')
     
         smi.columns = ['full', 'chopped', 'frag', 'dist', 'ang']
-        smi['pharm'] = [addPharmProfile.createPharmacophoricProfile(row['frag'], row['full']) for idx, row in smi.iterrows()]
+        smi['pharm'] = [add_pharm_profile.createPharmacophoricProfile(row['frag'], row['full']) for idx, row in smi.iterrows()]
         smi.to_csv(f'{tempDir.name}/{smiName}Pharm.smi', header = None, index = None, sep = ' ')
     
         raw_data = s2JSON.train_valid_split(f'{tempDir.name}/{smiName}Pharm.smi')['valid']
@@ -262,9 +261,9 @@ class elaborate:
             return False
     
 
-    def filterGeneratedMols(self, df):
+    def filterGeneratedMols(self, df, n_cores = 1):
 
-        df = eUtils.parallelize_dataframe(df, eUtils.addElab, n_cores = 7)
+        df = eUtils.parallelize_dataframe(df, eUtils.addElab, n_cores = n_cores)
         df = frag_utils.check_2d_filters_dataset_pandas(df)
     
         df = df.loc[df['passed'] == 1][['frag', 'full', 'gen', 'elab']]
@@ -272,7 +271,7 @@ class elaborate:
         return df
     
 
-    def makeElaborationsAndFilter(self, Hotspot, jobName = 'target', numElabsPerPoint = 250):
+    def makeElaborationsAndFilter(self, Hotspot, jobName = 'target', numElabsPerPoint = 250, n_cores = 1):
 
         elabLengths, profiles = Hotspot.determineProfiles()
 
@@ -287,7 +286,7 @@ class elaborate:
 
             g = self.generateMolsFromSpecificProfile(fragSmiles, elabLengths[idx], 'Count', profiles[idx], numToGenerate = numElabsPerPoint, smiName=jobName)
             #Filter:
-            g = self.filterGeneratedMols(g)
+            g = self.filterGeneratedMols(g, n_cores = n_cores)
 
             #filter those that don't have the correct profile out
             g['desiredProfile'] = [self.checkProfileCount(Chem.MolFromSmiles(row['gen']), Chem.MolFromSmiles(row['frag']), profiles[idx]) for i, row in g.iterrows()]
@@ -299,7 +298,7 @@ class elaborate:
         return Hotspot
     
     
-    def makeElaborationsNoFilter(self, Hotspot, modelType = 'Count', jobName = 'target', numElabsPerPoint = 250, filterQuality = False):
+    def makeElaborationsNoFilter(self, Hotspot, modelType = 'Count', jobName = 'target', numElabsPerPoint = 250, filterQuality = False, n_cores = 1):
         
         #if filterQuality, then we filter the generated molecules using the set of 2D filters but we don't ensure they have the correct pharmacophoric profile
         
@@ -325,7 +324,7 @@ class elaborate:
             print(g.shape[0])
 
             if filterQuality:
-                g = self.filterGeneratedMols(g)
+                g = self.filterGeneratedMols(g, n_cores = n_cores)
             print(g.shape[0])
             #Append g onto the list of molecules to be docked:
             Hotspot.profileElabs = Hotspot.profileElabs.append(g[['frag', 'full', 'gen']])
@@ -334,7 +333,7 @@ class elaborate:
     
     
     
-    def makePharmElabsQuasiActives(self, quasiActives, frag, filterMols = True):
+    def makePharmElabsQuasiActives(self, quasiActives, frag, filterMols = True, n_cores = 1):
         #make elaborations using the quasi actives extracted from a single hotspot or hotspot pair
 
 
@@ -347,8 +346,8 @@ class elaborate:
             if el > 1:
                 #Can't currently specify the desired elaboration length to just be one atom:
                 elabLengths.append(el)
-                p = addPharmProfile.createPharmacophoricProfile(frag, s)
-                p = addPharmProfile.pharmProfileToList(p)
+                p = add_pharm_profile.createPharmacophoricProfile(frag, s)
+                p = add_pharm_profile.pharmProfileToList(p)
                 pharmProfiles.append(p)
            
 
@@ -359,7 +358,7 @@ class elaborate:
             
             if filterMols:
                 #Apply 2D Filter:
-                d = self.filterGeneratedMols(d)
+                d = self.filterGeneratedMols(d, n_cores = n_cores)
             pharmElabs = pharmElabs.append(d)
             
         return pharmElabs

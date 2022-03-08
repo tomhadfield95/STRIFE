@@ -30,12 +30,12 @@ from rdkit.Chem import rdFMCS
 import glob
 import json
 import numpy as np
-from utils import bond_dict, dataset_info, need_kekulize, to_graph, to_graph_mol, align_smiles_by_MCS, graph_to_adj_mat
-import utils
+from utils.graph_utils import bond_dict, dataset_info, need_kekulize, to_graph, to_graph_mol, align_smiles_by_MCS, graph_to_adj_mat
+from utils import graph_utils
 import pickle
 import random
 from docopt import docopt
-from align_molecules import align_smiles_by_MCS_repeat
+from utils.align_molecules import align_smiles_by_MCS_repeat
 import pandas as pd
 
 dataset = 'zinc'
@@ -299,7 +299,7 @@ def preprocess(raw_data, dataset, name):
             json.dump(processed_data[section], f)
         # save all molecules in the training dataset
         #if section == 'train':
-        #    utils.dump('smiles_%s.pkl' % dataset, all_smiles)         
+        #    graph_utils.dump('smiles_%s.pkl' % dataset, all_smiles)         
           
 '''
 def preprocess_test(smiles_path, dataset):

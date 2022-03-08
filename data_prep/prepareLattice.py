@@ -9,10 +9,15 @@ script to prepare the lattice for manual pharmacophore specification
 """
 
 import sys
-from preprocessing import preprocessing
 from rdkit import Chem
 import numpy as np
 import shutil
+import os
+
+sys.path.insert(0, '..')
+from preprocessing import preprocessing
+
+
 
 
 ###Specify inputs#####
@@ -22,15 +27,40 @@ mol3DPath = sys.argv[1] #Location of the 3D conformer of the fragment
                         #in which case the fragment conformer will be extracted
 
 
-fragSmilesLoc = sys.argv[2] #location of the txt file containing the fragment smiles
-with open(fragSmilesLoc, 'r') as f:
-    fragSmiles = f.read()
-
+fragSmilesInput = sys.argv[2] #location of the txt file containing the fragment smiles or a string containing the fragment SMILES
 proteinLoc = sys.argv[3] #We're just going to copy the protein file into outStoreDir for easier use in the pymol script
 
 outStoreDir = sys.argv[4] #Directory to store files in
 
 #########################
+
+
+if fragSmilesInput is not None:
+    
+    #Check whether args.fragment_smiles is a file
+    if os.path.exists(os.path.expanduser(fragSmilesInput)):
+        fragSmilesInput = os.path.abspath(os.path.expanduser(fragSmilesInput))
+        smiles_file = True
+    else:
+        #Check that we can parse it with RDKit
+        try:
+            if Chem.MolFromSmiles(args.fragment_smiles).GetNumHeavyAtoms() > 0:
+                smiles_file = False
+            else: 
+                raise ValueError('Fragment must have at least one heavy atom')
+        except:
+            
+            raise ValueError("The supplied fragment_smiles doesn't appear to be a file and RDKit is unable to parse it as a molecule. Please check that you're providing a valid fragment")
+
+    if smiles_file:
+        with open(fragSmilesInput, 'r') as f:
+            fragSmiles = f.read()
+    
+    else:
+        fragSmiles = fragSmilesInput
+
+
+
 
 
 prep = preprocessing()

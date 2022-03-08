@@ -32,8 +32,8 @@ import pdb
 import json
 import os
 from GGNN_DeLinker import ChemModel
-import utils
-from utils import *
+import utils.graph_utils 
+from utils.graph_utils import *
 import pickle
 import random
 from numpy import linalg as LA
@@ -42,7 +42,7 @@ from copy import deepcopy
 from rdkit.Chem import QED
 import os
 import time
-from data_augmentation import *
+from utils.data_augmentation import *
 
 '''
 Comments provide the expected tensor shapes where helpful.
