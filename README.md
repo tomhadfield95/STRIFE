@@ -222,7 +222,7 @@ Once the pharmacophoric points have been manually specified, you can generate el
 
 ```
 conda activate STRIFE
-python STRIFE.py -f example_custom_pharms/1q8t_frag.sdf -s example_custom_pharms/1q8t_frag_smiles.smi -p example_custom_pharms/1q8t_protein.pdb -o <directory_to_store_output> --load_specified_pharms --model_type 1
+python STRIFE.py -f example_custom_pharms/1q8t_frag.sdf -s example_custom_pharms/1q8t_frag_smiles.smi -p example_custom_pharms/1q8t_protein.pdb -o example_custom_pharms/STRIFE_1q8t --load_specified_pharms --model_type 1
 ```
 
 # STRIFE output
