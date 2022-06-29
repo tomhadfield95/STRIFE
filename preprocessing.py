@@ -638,6 +638,9 @@ class preprocessing:
         
         if not verbose:
         
+            #Check that the fragment lies in a piece of apolar density:
+            self.fragInApolar = self.compareFragToApolar(fragMol, aboveThresholdDictApolar)
+            
             #Create Donor and Acceptor Mols
             donorMol = self.createDAMols(aboveThresholdDictDonor, aboveThresholdDictApolar, 
                                    exitVecPos, fragMol, sizeCutOff=sizeCutOff, donor = True, 
@@ -652,7 +655,8 @@ class preprocessing:
         elif verbose:
             #Return the intermediate steps of the processing as well
             
-            
+            #Check that the fragment lies in a piece of apolar density:
+            self.fragInApolar = self.compareFragToApolar(fragMol, aboveThresholdDictApolar)
             
             #Create Donor and Acceptor Mols
             donorOut = self.createDAMols(aboveThresholdDictDonor, aboveThresholdDictApolar, 
@@ -842,6 +846,43 @@ class preprocessing:
         centroidDF['apolarProximity'] = proximity #The nearest bit of apolar density to each centroid
         
         return centroidDF
+    
+    def compareFragToApolar(self, frag, apolarGrid):
+        
+        #Return True if all fragment atoms are in close proximity to a piece of apolar density
+        #Otherwise return False
+        
+        x = []
+        y = []
+        z = []
+    
+        for k in list(apolarGrid.keys()):
+            x.append(apolarGrid[k][0][0])
+            y.append(apolarGrid[k][0][1])
+            z.append(apolarGrid[k][0][2])
+        
+        apolar_coords = np.transpose(np.array([x,y,z]))
+        frag_coords = np.array([np.array(frag.GetConformer().GetAtomPosition(x)) for x in range(frag.GetNumHeavyAtoms())])
+        
+        
+        #Cross reference apolar_coords against frag_coords:
+        
+
+        min_dist_vec = []
+        for i in frag_coords:
+            
+            dist_vec = []
+            for j in apolar_coords:
+                dist_vec.append(self.vectorDistance(i, j))
+            
+            min_dist_vec.append(np.min(dist_vec)) #Add the distance between the fragment atom and the closest piece of apolar density
+            
+        if np.max(min_dist_vec) > 1.5:
+            #i.e. there is a fragment atom that is not close to a piece of apolar density
+            return False
+        else:
+            return True
+        
 
     def compareEVToOtherAtoms(self, df, evp, frag):
         

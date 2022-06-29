@@ -252,7 +252,10 @@ class STRIFE:
             Chem.MolToMolFile(hotspotsDict['Acceptor'], f'{self.storeLoc}/acceptorHotspot.sdf')
             Chem.MolToMolFile(hotspotsDict['Donor'], f'{self.storeLoc}/donorHotspot.sdf')
 
-
+            if args.check_frags_apolar:
+                self.fragInApolar = self.preprocessing.fragInApolar #In the processHotspots function we check whether the fragment lies within apolar density.
+            else:
+                self.fragInApolar = "Not checked"
 
 
         
@@ -311,18 +314,26 @@ class STRIFE:
             
     def runWholePipeline(self, totalNumElabs = 250, numElabsPerPoint = 250):
         
-        if self.HotspotsDF.shape[0] > 0:
-            self.exploration(numElabsPerPoint = numElabsPerPoint)
-            self.identifyQuasiActives()
-            
-            numQuasiActives = sum([self.singleQuasiActives[k].shape[0] for k in self.singleQuasiActives.keys()])
-            if numQuasiActives > 0:
-                self.refinement(totalNumElabs)
-                self.status = 'No Issues'
-            else:
-                self.status = 'No quasi-actives identified'
-        else: 
-            self.status = 'No suitable hotspots identified'
+        
+        if self.fragInApolar == False:
+            self.status = 'Fragment not completely contained within apolar region - to disable, omit check_frags_apolar argument'
+            print('Fragment not completely contained within apolar region - to disable, omit check_frags_apolar argument')
+        else:
+            if self.HotspotsDF.shape[0] > 0:
+                self.exploration(numElabsPerPoint = numElabsPerPoint)
+                self.identifyQuasiActives()
+                
+                numQuasiActives = sum([self.singleQuasiActives[k].shape[0] for k in self.singleQuasiActives.keys()])
+                if numQuasiActives > 0:
+                    self.refinement(totalNumElabs)
+                    self.status = 'No Issues'
+                    print('STRIFE appears to have run without any issues!')
+                else:
+                    self.status = 'No quasi-actives identified'
+                    print('No quasi-actives identified')
+            else: 
+                self.status = 'No suitable hotspots identified'
+                print('No suitable hotspots identified')
 
 
     def manuallySpecifyPharmPoints(self):
@@ -826,6 +837,9 @@ if __name__=='__main__':
     
     parser.add_argument('--model_type', '-t', type = int, default = 0,
                         help = 'Specify which setting you wish to generate the molecules with: 0 -> default STRIFE algorithm, 1 -> simultaneously satisfy multiple pharmacophoric points (only recommended if you have manually specified the pharmacophores), 2 -> run the STRIFE algorithm without refinement. Default %(default)s')
+    
+    parser.add_argument('--check_frags_apolar', '-cfa', action = "store_true", 
+                        help = 'When preprocessing, check that the fragment lies entirely within an apolar region.')    
     parser.add_argument('--number_elaborations', '-n', type = int, default = 250,
             help = 'Final number of elaborations for the model to generate. Default: %(default)s')
     parser.add_argument('--number_elaborations_exploration', '-e', type = int, default = 250,
@@ -837,6 +851,9 @@ if __name__=='__main__':
 
     parser.add_argument('--num_cpu_cores', '-cpu', type = int, default = 1, 
             help='Number of CPU cores to use for docking and other computations. Specifiying -1 will use all available cores')
+
+
+
 
     #TODO
     #parser.add_argument('--compute_hotspot_distance', action = "store_true",
