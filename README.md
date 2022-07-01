@@ -15,11 +15,14 @@ Contents of this README:
   * Setting Environment Variables
 * Running STRIFE
   * Example code to run STRIFE using the default implementation
+  * Fragment Filtering
   * Using PyMol
   * Calculating a Fragment Hotspot Map
   * Specifying a fragment exit vector
   * Manually specifying pharmacophoric points
 * STRIFE output
+* Known Issues
+  * Selecting a fragment Hydrogen Bond Donor as an exit vector
 * Contact
 
 # Acknowledgements
@@ -149,6 +152,12 @@ We run STRIFE on one of the examples in our test set derived from CASF-2016 (PDB
 python STRIFE.py -f example/1q8t_frag.sdf -s example/1q8t_frag_smiles.smi -p example/1q8t_protein.pdb -z example/hotspotsOut/out.zip -o example/STRIFE_1q8t
 ```
 
+# Fragment filtering
+
+Users may optionally add a processing step where STRIFE checks that the starting fragment is fully contained within an apolar hotspot region - if a fragmet is not contained within a hotspot region this may be an indication that the fragment is not a suitable candidate for elaboration.
+
+To add this checking step, use the `--check_frags_apolar` flag when running `python STRIFE.py <args>` in the command line. 
+
 # Using PyMol
 
 We found that installing PyMol into the STRIFE directory seemed to cause issues. Others might not find this to be the case but for simplicity we provide a second Conda environment, called `pymol_env` which just contains the packages necessary to run the open source version of PyMol. The environment can be installed as follows:
@@ -208,13 +217,22 @@ An example of a numbered molecule is below (the unnumbered atom has index 0):
 
 # Manually Specifying Pharmacophoric Points
 
-To manually specify a set of pharmacophoric points, you should use the `doManualPharmSpecification.sh` bash script, which should be run as follows:
+To manually specify a set of pharmacophoric points, you should use the `do_manual_pharm_specification.sh` bash script, which should be run as follows:
 
 ```
-bash doManualPharmSpecification.sh <fragment_SDF> <fragment_SMILES> <protein_PDB> <directory_to_store_output>
+bash do_manual_pharm_specification.sh <fragment_SDF> <fragment_SMILES> <protein_PDB> <directory_to_store_output>
 ```
 
-The script loads the fragment into a PyMol session and generates a lattice of points about the exit vector. The user then selects their desired pharmacophoric points and can save them in the output directory. The donor hotspots and the acceptor hotspots must be saved in separate SDF files and must be called `donorHotspot.sdf` and `acceptorHotspot.sdf`. When running STRIFE, specify `--model_type 1` and `--output_directory <directory_to_store_output>` so that STRIFE knows to use the manually specified hotspots and where to find them.
+Where: 
+* `fragment_SDF` is the path to the fragment you want to elaborate from, or a larger molecule which the desired fragment is a substructure of.
+* `fragment_smiles` can either by a file containing the SMILES of the desired fragment or a string containing the fragment - the fragment exit vector should be denoted by a dummy atom.
+* `protein_PDB` is the path to the protein_pdb file.
+* `directory_to_store_output` is a directory in which files needed to run the PyMol session will be stored.
+
+The script loads the fragment into a PyMol session and generates a lattice of points about the exit vector. The user then selects their desired pharmacophoric points and can save them in the output directory. The donor hotspots and the acceptor hotspots must be saved in separate SDF files and must be called `donorHotspot.sdf` and `acceptorHotspot.sdf`. When saving the selected lattice point in PyMol, you must use the state=0 command - i.e. (in the PyMol command line): `save donorHotspot.sdf, my_HBD_selection, state=0`
+
+
+When running STRIFE, specify `--model_type 1` and `--output_directory <directory_to_store_output>` so that STRIFE knows to use the manually specified hotspots and where to find them.
 
 ![Hotspots Lattice](imgs/latticeExample3.png)
 
@@ -231,6 +249,11 @@ The primary output provided by STRIFE is a pandas dataframe containing the final
 
 In addition, we also save the docked molecules in an SDF file in the `--output_directory`, with the ligand efficiency score saved as an attribute of each molecule. If `--model_type` is set as `0`, the SDF file is called `pharmsElabsTestDocked.sdf`. If `--model_type` is set as `1`, the SDF file is called `pharmsElabsTestMultiDocked.sdf`.
 
+# Known Issues
+
+## Selecting a fragment Hydrogen Bond Donor as an exit vector
+
+Part of the STRIFE algorithm depends on calculating on how many pharmacophores are included in the elaboration, which is currently done by calculating the number of pharmacophores in the original fragment and then calculating the number in the elaborated molecule. In instances where a Hydrogen Bond Donor is selected an exit vector, we have observed behaviour where the elaboration causes the atom not to be a HBD anymore and therefore the calculated number of HBDs in the elaboration is incorrect, causing unplanned behaviour. We will fix this in due course but for the time being we advise users to select a different exit vector if possible.
 
 # Contact (Questions/Bugs/Requests)
 
