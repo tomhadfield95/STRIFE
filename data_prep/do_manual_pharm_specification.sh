@@ -1,6 +1,8 @@
 #Usage:
 
-#IMPORTANT: You must change the penultimate line - replace <path/to/CSD/Suite> with the location of your CSD installation
+#IMPORTANT: You must change the penultimate line - replace <path/to/conda/installation> with the location of your miniconda or anaconda installation
+	#   You can run conda info --envs to find where your conda environments are installed
+
 #Alternatively you can activate a different conda environment which has a working version of PyMol installed
 
 
@@ -16,8 +18,7 @@
 
 #WHEN SAVING THE SELECTED IN LATTICE POINTS IN PyMol, YOU MUST USE THE state=0 command - i.e. (in the PyMol command line): save donorHotspot.sdf, my_HBD_selection, state=0
 
-#Once the SDF files have been saved, you can use them to run STRIFE - to do so you must specify --model_type 1 and --output_directory <output/directory> (i.e. the same place as you saved everything above) as arguments to 
-	#STRIFE.py
+#Once the SDF files have been saved, you can use them to run STRIFE - to do so you must specify --model_type 1 and --output_directory <output/directory> (i.e. the same place as you saved everything above) as arguments to STRIFE.py
 
 
 
@@ -33,17 +34,11 @@ echo 'Loading PyMol for Manual Pharmacophore Specification'
 
 mkdir ${output_directory}
 
-#source <path/to/CSD/Suite>/Python_API_2021/miniconda/bin/activate STRIFE #MUST CHANGE THIS FILE PATH TO MATCH YOUR OWN INSTALLATION!!!
-source /data/hookbill/hadfield/CSD/Python_API_2021/miniconda/bin/activate STRIFE #MUST CHANGE THIS FILE PATH TO MATCH YOUR OWN INSTALLATION!!!
-
+#source <path/to/conda/installation>/bin/activate STRIFE #MUST CHANGE THIS FILE PATH TO MATCH YOUR OWN INSTALLATION!!!
 python prepareLattice.py ${path_to_mol_SDF} ${fragment_smiles} ${path_to_protein_pdb} ${output_directory}
 
 
-
-#source <path/to/CSD/Suite>/Python_API_2021/miniconda/bin/activate pymol_env #MUST CHANGE THIS FILE PATH TO MATCH YOUR OWN INSTALLATION!!!
-source /data/hookbill/hadfield/CSD/Python_API_2021/miniconda/bin/activate pymol_env #MUST CHANGE THIS FILE PATH TO MATCH YOUR OWN INSTALLATION!!!
-
-
+#source <path/to/conda/installation>/bin/activate pymol_env #MUST CHANGE THIS FILE PATH TO MATCH YOUR OWN INSTALLATION!!!
 python loadLatticeIntoPymol.py ${output_directory}
 
 
